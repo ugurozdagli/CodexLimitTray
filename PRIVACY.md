@@ -5,16 +5,23 @@ CLT uses the Codex installation and signed-in session of the person running it. 
 ## What CLT handles
 
 - Rate-limit percentages, window durations, reset timestamps, and optional limit/plan labels returned by Codex.
-- Display preferences: widget visibility, simple/detailed mode, tray selection, horizontal offset, and position lock.
+- Display preferences: visibility, view, tray selection, position, theme, text scale, reset format, monitor identity, and notification thresholds.
+- When supplied by Codex, a SHA256 account fingerprint and ordinary-usage permission for safe notification comparison. The raw account identifier is not retained in the usage model; the fingerprint stays in memory and is excluded from diagnostic serialization.
 - An optional current-user startup entry containing the executable path.
 
-The latest usage snapshot stays in memory during normal operation. Preferences are stored at `%LOCALAPPDATA%\CodexLimitTray\settings.json`. Startup uses `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `CodexLimitTray`.
+The latest usage snapshot stays in memory during normal operation. Preferences are stored at `%LOCALAPPDATA%\CodexLimitTray\settings.json`, with the previous copy at `settings.json.bak`. Startup uses `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, value `CodexLimitTray`.
 
 ## Authentication and networking
 
 CLT does not directly open Codex's `auth.json`, request a password/API key, or store authentication tokens. The local Codex app-server manages its own authentication. Responses may include additional account metadata; CLT's display parser selects the usage fields it needs and does not persist raw responses.
 
 CLT has no telemetry endpoint, analytics database, or incoming network listener. The Codex helper contacts Codex services as necessary and remains subject to its own configuration and OpenAI's policies. "No CLT telemetry" does not mean "no network activity by Codex."
+
+## Optional update checks and notifications
+
+Only when you choose **Check for updates**, CLT requests the public GitHub Releases API using its application version as the User-Agent. GitHub receives ordinary connection metadata such as your IP address. No Codex account identifiers, usage percentages, or authentication credentials are sent. Opening a release page uses your default browser. CLT does not automatically download or execute an update.
+
+Notifications are evaluated locally from existing refreshes. There is no additional notification service or polling. Account fingerprints and notification baselines are not saved across app restarts. Preferences include whether you enabled alerts and the thresholds you selected.
 
 ## Explicit diagnostics
 

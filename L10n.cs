@@ -8,6 +8,11 @@ internal static class L10n
     public static bool IsTurkish => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "tr";
     public static CultureInfo Culture => CultureInfo.GetCultureInfo(IsTurkish ? "tr-TR" : "en-US");
     public static string Percent(int remaining) => IsTurkish ? $"%{remaining}" : $"{remaining}%";
+    public static string Text(string turkish, string english, params object?[] args)
+    {
+        var text = IsTurkish ? turkish : english;
+        return args.Length == 0 ? text : string.Format(Culture, text, args);
+    }
     public static string T(string turkish, params object?[] args)
     {
         var text = IsTurkish ? turkish : English.GetValueOrDefault(turkish, turkish);
@@ -15,6 +20,14 @@ internal static class L10n
     }
     private static readonly Dictionary<string, string> English = new()
     {
+        ["Ekran {0} · {1} × {2}"] = "Display {0} · {1} × {2}",
+        ["Ana ekran"] = "Primary display",
+        ["Limit"] = "Limit",
+        ["{0}g"] = "{0}d",
+        ["{0}s"] = "{0}h",
+        ["{0}dk"] = "{0}m",
+        ["{0}g {1}s"] = "{0}d {1}h",
+        ["{0}s {1}dk"] = "{0}h {1}m",
         ["Windows ile başlat"] = "Start with Windows",
         ["Şimdi yenile"] = "Refresh now",
         ["Tray: 5 saatlik"] = "Tray: 5-hour",

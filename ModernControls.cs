@@ -41,12 +41,12 @@ internal sealed class ModernButton : Button
     {
         var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
         using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 11);
-        var color = Primary ? (hover ? Color.FromArgb(132, 242, 205) : Palette.Mint) : (hover ? Color.FromArgb(42, 54, 71) : Color.FromArgb(29, 39, 53));
-        if (!Enabled) color = Color.FromArgb(40, 54, 60);
+        var color = Primary ? (hover ? ControlPaint.Light(Palette.Mint, .1f) : Palette.Mint) : (hover ? Palette.Chip : Palette.Card);
+        if (!Enabled) color = Palette.Track;
         using var fill = new SolidBrush(color); g.FillPath(fill, shape);
-        if (!Primary) { using var border = new Pen(Color.FromArgb(49, 64, 83)); g.DrawPath(border, shape); }
+        if (!Primary) { using var border = new Pen(Palette.Border); g.DrawPath(border, shape); }
         using var font = Palette.Font(Text == "×" ? 14 : 9.25f, FontStyle.Bold);
-        using var textBrush = new SolidBrush(!Enabled ? Palette.Muted : Primary ? Color.FromArgb(15, 44, 35) : Palette.Text);
+        using var textBrush = new SolidBrush(!Enabled ? Palette.Muted : Primary ? Palette.PrimaryText : Palette.Text);
         using var textFormat = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
         g.DrawString(Text, font, textBrush, ClientRectangle, textFormat);
         if (Focused && ShowFocusCues) { using var ring = new Pen(Palette.Text); g.DrawPath(ring, shape); }
@@ -83,6 +83,90 @@ internal sealed class SmoothLabel : Label
     {
         ModernShape.Prepare(e.Graphics);
         using var brush = new SolidBrush(ForeColor);
-        e.Graphics.DrawString(Text, Font, brush, ClientRectangle);
+        e.Graphics.DrawString(Text, Font, brush, new RectangleF(Padding.Left, Padding.Top, Width - Padding.Horizontal, Height - Padding.Vertical));
     }
+}
+
+internal sealed class ModernSelect : Control
+{
+    public List<object> Items { get; } = new();
+    private int selected;
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    public int SelectedIndex { get => selected; set { selected = value; Invalidate(); } }
+    public object? SelectedItem => Items.ElementAtOrDefault(selected);
+    public ModernSelect()
+    {
+        DoubleBuffered = true; Cursor = Cursors.Hand; TabStop = true; AccessibleRole = AccessibleRole.ComboBox;
+        Click += (_, _) => OpenChoices();
+        KeyDown += (_, e) =>
+        {
+            if (e.KeyCode is Keys.Space or Keys.Enter) { OpenChoices(); e.Handled = true; }
+            else if (e.KeyCode is Keys.Up or Keys.Down) { SelectedIndex = Math.Clamp(selected + (e.KeyCode == Keys.Up ? -1 : 1), 0, Items.Count - 1); e.Handled = true; }
+        };
+        GotFocus += (_, _) => Invalidate(); LostFocus += (_, _) => Invalidate();
+    }
+    protected override bool IsInputKey(Keys keyData) => (keyData & Keys.KeyCode) is Keys.Up or Keys.Down or Keys.Space or Keys.Enter || base.IsInputKey(keyData);
+    protected override AccessibleObject CreateAccessibilityInstance() => new SelectionAccessibility(this);
+    private sealed class SelectionAccessibility(ModernSelect owner) : ControlAccessibleObject(owner)
+    {
+        public override string? Value { get => owner.SelectedItem?.ToString(); set { } }
+        public override string? DefaultAction => L10n.Text("Seçenekleri aç", "Open choices");
+        public override void DoDefaultAction() => owner.OpenChoices();
+    }
+    private void OpenChoices()
+    {
+        Focus();
+        var menu = new ContextMenuStrip { Renderer = new ToolStripProfessionalRenderer(new MenuColors()), BackColor = Palette.Background, ForeColor = Palette.Text, Font = Palette.Font(9) };
+        for (var i = 0; i < Items.Count; i++)
+        {
+            var index = i;
+            var item = new ToolStripMenuItem(Items[i].ToString()) { Checked = selected == i, BackColor = Palette.Background, ForeColor = Palette.Text };
+            item.Click += (_, _) => { SelectedIndex = index; Focus(); }; menu.Items.Add(item);
+        }
+        menu.Closed += (_, _) => { if (IsHandleCreated && !IsDisposed) BeginInvoke(() => menu.Dispose()); else menu.Dispose(); };
+        menu.Show(this, new Point(0, Height));
+    }
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
+        using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 8);
+        using var fill = new SolidBrush(Palette.Card); using var border = new Pen(Focused ? Palette.Mint : Palette.Border);
+        g.FillPath(fill, shape); g.DrawPath(border, shape);
+        using var brush = new SolidBrush(Palette.Text); using var font = Palette.Font(9);
+        using var format = new StringFormat { LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap, Trimming = StringTrimming.EllipsisCharacter };
+        g.DrawString(SelectedItem?.ToString() ?? "", font, brush, new RectangleF(11, 0, Width - 38, Height), format);
+        g.FillPolygon(brush, [new PointF(Width - 22, Height / 2f - 2), new PointF(Width - 14, Height / 2f - 2), new PointF(Width - 18, Height / 2f + 2)]);
+    }
+}
+
+internal static class WindowChrome
+{
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] private struct Margins { public int Left, Right, Top, Bottom; }
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")] private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref Margins margins);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool ReleaseCapture();
+    [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
+    public static void Apply(Form form)
+    {
+        var round = 2; DwmSetWindowAttribute(form.Handle, 33, ref round, sizeof(int));
+        var dark = Palette.Light ? 0 : 1; DwmSetWindowAttribute(form.Handle, 20, ref dark, sizeof(int));
+        var margins = new Margins { Left = 1, Right = 1, Top = 1, Bottom = 1 }; DwmExtendFrameIntoClientArea(form.Handle, ref margins);
+        if (Environment.OSVersion.Version.Build < 22000) { using var path = ModernShape.Round(form.ClientRectangle, 18); form.Region = new Region(path); }
+    }
+    public static void Drag(Form form) { ReleaseCapture(); SendMessage(form.Handle, 0xA1, new IntPtr(2), IntPtr.Zero); }
+}
+
+internal sealed class MenuColors : ProfessionalColorTable
+{
+    public override Color ToolStripDropDownBackground => Palette.Background;
+    public override Color ImageMarginGradientBegin => Palette.Background;
+    public override Color ImageMarginGradientMiddle => Palette.Background;
+    public override Color ImageMarginGradientEnd => Palette.Background;
+    public override Color MenuBorder => Palette.Border;
+    public override Color MenuItemSelected => Palette.Chip;
+    public override Color MenuItemBorder => Palette.Border;
+    public override Color CheckBackground => Palette.Chip;
+    public override Color CheckSelectedBackground => Palette.Chip;
+    public override Color SeparatorDark => Palette.Border;
+    public override Color SeparatorLight => Palette.Background;
 }

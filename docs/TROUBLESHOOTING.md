@@ -8,9 +8,17 @@ CLT prefers `%LOCALAPPDATA%\OpenAI\Codex\bin\*\codex.exe`, then searches `PATH`.
 
 ## The widget is hidden or overlaps another button
 
-It hides for full-screen content and follows the primary horizontal taskbar. Exit full-screen mode. The overlay does not reserve taskbar space; drag it to a clear area or right-click and choose **Gösterge konumunu sıfırla**. Unlock its position first if necessary.
+It hides for full-screen content and follows the selected horizontal taskbar (primary by default). Open Settings to select a display; an unavailable screen/taskbar falls back to the primary taskbar. Exit full-screen mode. The overlay does not reserve taskbar space; drag it to a clear area or right-click and choose **Gösterge konumunu sıfırla**. Unlock its position first if necessary.
 
 The fallback tray icon may be in Windows' `^` overflow menu. Drag it to the visible tray area if desired.
+
+## Notifications do not appear
+
+Enable the options in Settings and check Windows notification permissions/Focus settings. The first reading is intentionally silent. Notifications require Codex to supply account continuity; use a current Codex installation. Replenishment requires explicit backend permission and a confirmed new window, not just the reset countdown. Errors, account changes, and gaps reset the baseline silently. Nothing is monitored while CLT is closed.
+
+## Updates and saved settings
+
+Settings shows the installed version and has a manual update check. A failed GitHub request does not affect quota monitoring. Exit CLT before replacing the executable. Preferences live separately in local app-data and are preserved, with a `.bak` copy for recovery. Themes and text size are available under Settings; reset date/countdown settings apply to Detailed view.
 
 ## Startup stopped working after moving the app
 

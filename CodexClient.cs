@@ -55,7 +55,7 @@ internal static class CodexClient
         var stderr = Task.Run(async () => { try { while (await process.StandardError.ReadLineAsync(ct) is not null) { } } catch (OperationCanceledException) { } catch (IOException) { } });
         try
         {
-            await Send(new { id = 1, method = "initialize", @params = new { clientInfo = new { name = "codex_limit_tray", title = "CodexLimitTray", version = "1.3.0" } } });
+            await Send(new { id = 1, method = "initialize", @params = new { clientInfo = new { name = "codex_limit_tray", title = "CodexLimitTray", version = AppInfo.Version } } });
             await Receive(1);
             await Send(new { method = "initialized", @params = new { } });
             await Send(new { id = 2, method = "account/rateLimits/read", @params = new { } });

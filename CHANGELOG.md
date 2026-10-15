@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0 — Personalize your taskbar
+
+- Add a rounded bilingual Settings panel and a gear shortcut from the usage panel.
+- Add dark/light/system panel themes, taskbar-aware contrast, and three widget text sizes.
+- Add date/countdown/hidden reset details and measured widget bounds.
+- Add saved display selection with primary-taskbar fallback.
+- Add opt-in warning/critical quota alerts and backend-confirmed replenishment notices.
+- Keep notification identity hashes in memory; silence baselines and avoid repeated threshold alerts.
+- Fix unknown/non-weekly duration labels and collapse missing widget windows.
+- Preserve old preferences with atomic settings replacement and backup recovery.
+- Add manual update checks, failure backoff, resume refresh, and a short manual refresh cooldown.
+- Expand offline coverage to 114 checks, with live Codex/ownership and update-endpoint smoke checks.
+
 ## 1.3.0 — Automatic English and Turkish interface
 
 - Follow the Windows display language: Turkish for Turkish, English for other languages.

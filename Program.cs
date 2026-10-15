@@ -27,11 +27,37 @@ internal static class Diagnostics
             // Diagnostics can render either language without changing Windows settings.
             if (args.Length > 2 && args[2] is "en-US" or "tr-TR")
                 System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(args[2]);
-            if (args[0] == "--demo-previews")
+            if (args[0] is "--demo-previews" or "--feature-previews")
             {
                 Directory.CreateDirectory(output);
                 // Public documentation uses fictional data, never a contributor's live account.
                 var demo = new UsageSnapshot([new UsageBucket("codex", "Codex", new UsageWindow(28, 300, DateTimeOffset.Now.AddHours(3)), new UsageWindow(14, 10080, DateTimeOffset.Now.AddDays(5)), "plus")], DateTimeOffset.Now);
+                if (args[0] == "--feature-previews")
+                {
+                    foreach (var theme in new[] { ThemeMode.Dark, ThemeMode.Light })
+                    {
+                        Palette.Apply(theme);
+                        using var panel = new Popup(() => { }, () => { }, () => { }, () => { });
+                        panel.SetState(demo, null, false, false, true);
+                        SaveForm(panel, "panel-" + theme + ".png");
+                        using var options = new SettingsForm(new Settings { Theme = theme, LowQuotaAlerts = true }, () => { }, () => { }, previewStartup: false);
+                        SaveForm(options, "settings-" + theme + ".png");
+                        var size = TaskbarWidget.MeasureWidget(demo, true, 1.2f, true, ResetDisplay.Countdown);
+                        using var widget = TaskbarWidget.DrawWidget(demo, true, size, 1.2f, true, ResetDisplay.Countdown, theme == ThemeMode.Light);
+                        using var canvas = new Bitmap(size.Width + 40, size.Height + 30);
+                        using var g = Graphics.FromImage(canvas); g.Clear(Palette.Background); g.DrawImageUnscaled(widget, 20, 15);
+                        canvas.Save(Path.Combine(output, "widget-" + theme + ".png"));
+                    }
+                    Palette.Apply(ThemeMode.Dark);
+                    return 0;
+                    void SaveForm(Form form, string file)
+                    {
+                        form.StartPosition = FormStartPosition.Manual; form.Location = new Point(-30000, -30000); form.Show(); Application.DoEvents();
+                        using var bitmap = new Bitmap(form.Width, form.Height);
+                        form.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+                        bitmap.Save(Path.Combine(output, file), System.Drawing.Imaging.ImageFormat.Png);
+                    }
+                }
                 using var popup = new Popup(() => { }, () => { }, () => { });
                 popup.SetState(demo, null, false, false, true);
                 popup.Location = new Point(-30000, -30000); popup.Show(); Application.DoEvents();
@@ -58,6 +84,11 @@ internal static class Diagnostics
             {
                 var tests = RunTests();
                 File.WriteAllText(output, JsonSerializer.Serialize(new { passed = tests.Count, tests }, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            else if (args[0] == "--check-update")
+            {
+                var available = UpdateChecker.CheckAsync(CancellationToken.None).GetAwaiter().GetResult();
+                File.WriteAllText(output, JsonSerializer.Serialize(new { currentVersion = AppInfo.Version, availableVersion = available?.ToString() }));
             }
             else if (args[0] is "--smoke-test" or "--smoke-test-error")
             {
@@ -117,7 +148,7 @@ internal static class Diagnostics
                 else
                 {
                     // Deliberately omit account ID, email, tokens, credits and raw server responses.
-                    File.WriteAllText(output, JsonSerializer.Serialize(new { ok = true, fetchedAt = data.FetchedAt, buckets = data.Buckets.Select(b => new { name = b.Name, primaryRemaining = b.Primary?.Remaining, secondaryRemaining = b.Secondary?.Remaining, primaryReset = b.Primary?.ResetText, secondaryReset = b.Secondary?.ResetText }) }, new JsonSerializerOptions { WriteIndented = true }));
+                    File.WriteAllText(output, JsonSerializer.Serialize(new { ok = true, notificationAccountKnown = data.AccountKey is not null, recoveryPermissionKnown = data.OrdinaryUsageAllowed is not null, fetchedAt = data.FetchedAt, buckets = data.Buckets.Select(b => new { name = b.Name, primaryRemaining = b.Primary?.Remaining, secondaryRemaining = b.Secondary?.Remaining, primaryReset = b.Primary?.ResetText, secondaryReset = b.Secondary?.ResetText }) }, new JsonSerializerOptions { WriteIndented = true }));
                 }
             }
             else throw new ArgumentException(L10n.T("Desteklenen seçenekler: --self-test, --diagnose, --preview; ardından çıktı dosyası."));
@@ -205,6 +236,7 @@ internal static class Diagnostics
             System.Globalization.CultureInfo.CurrentUICulture = originalUi;
             System.Globalization.CultureInfo.CurrentCulture = originalRegion;
         }
+        FeatureTests.Run(Check);
         return passed;
     }
 }

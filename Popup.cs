@@ -13,7 +13,7 @@ internal sealed class Popup : Form
     private string subtitle = L10n.T("Codex oturumuna bağlanıyor");
     private bool live;
     private string contentKey = "";
-    public Popup(Action refreshAction, Action startupAction, Action modeAction)
+    public Popup(Action refreshAction, Action startupAction, Action modeAction, Action? settingsAction = null)
     {
         Text = "CLT · CodexLimitTray";
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true;
@@ -26,6 +26,11 @@ internal sealed class Popup : Form
         close.SetBounds(365, 23, 32, 32);
         close.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         Controls.Add(close);
+        if (settingsAction is not null)
+        {
+            var options = MakeButton("⚙", settingsAction); options.SetBounds(328, 23, 32, 32);
+            options.AccessibleName = L10n.Text("Ayarlar", "Settings"); Controls.Add(options);
+        }
         Controls.Add(cards);
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 164, BackColor = Palette.Background };
         refresh = MakeButton(L10n.T("Şimdi yenile"), refreshAction);
@@ -53,7 +58,7 @@ internal sealed class Popup : Form
     {
         base.OnHandleCreated(e);
         var round = 2; DwmSetWindowAttribute(Handle, 33, ref round, sizeof(int));
-        var dark = 1; DwmSetWindowAttribute(Handle, 20, ref dark, sizeof(int));
+        var dark = Palette.Light ? 0 : 1; DwmSetWindowAttribute(Handle, 20, ref dark, sizeof(int));
         var margins = new Margins { Left = 1, Right = 1, Top = 1, Bottom = 1 };
         DwmExtendFrameIntoClientArea(Handle, ref margins);
         if (Environment.OSVersion.Version.Build < 22000)
@@ -66,7 +71,8 @@ internal sealed class Popup : Form
         live = fresh;
         subtitle = snapshot is null ? L10n.T("Kalan kullanım hakkın") : $"{L10n.T("Kalan kullanım hakkın")}  ·  {snapshot.Main.Plan?.ToUpperInvariant() ?? "CODEX"}";
         refresh.Enabled = !busy; refresh.Text = busy ? L10n.T("Yenileniyor…") : L10n.T("Şimdi yenile");
-        mode.Text = weekly ? L10n.T("Tray: haftalık") : L10n.T("Tray: kısa dönem");
+        var selected = snapshot is null ? null : weekly ? snapshot.Main.Secondary ?? snapshot.Main.Primary : snapshot.Main.Primary ?? snapshot.Main.Secondary;
+        mode.Text = selected is not null ? "Tray: " + selected.Duration : weekly ? L10n.T("Tray: haftalık") : L10n.T("Tray: kısa dönem");
         settingStartup = true; startup.Checked = Startup.Enabled; settingStartup = false;
         status.Text = error is not null ? error : snapshot is null ? L10n.T("Codex'ten kullanım verisi alınıyor…") : L10n.T("{0} · Son kontrol {1:HH:mm:ss}\n60 saniyede bir otomatik yenilenir.", fresh ? L10n.T("Güncel") : L10n.T("Eski veri"), snapshot.FetchedAt);
         status.ForeColor = error is not null ? Palette.For(0) : Palette.Muted;
@@ -91,19 +97,19 @@ internal sealed class Popup : Form
         base.OnPaint(e);
         var g = e.Graphics; ModernShape.Prepare(g);
         using var mark = ModernShape.Round(new RectangleF(24, 23, 38, 38), 12);
-        using var markFill = new SolidBrush(Color.FromArgb(31, 63, 56)); g.FillPath(markFill, mark);
+        using var markFill = new SolidBrush(Palette.Light ? Color.FromArgb(218, 239, 230) : Color.FromArgb(31, 63, 56)); g.FillPath(markFill, mark);
         using var accent = new SolidBrush(Palette.Mint);
         g.FillRectangle(accent, 34, 43, 4, 7); g.FillRectangle(accent, 41, 37, 4, 13); g.FillRectangle(accent, 48, 31, 4, 19);
         using var title = Palette.Font(13, FontStyle.Bold);
         using var sub = Palette.Font(8.75f);
         using var text = new SolidBrush(Palette.Text); using var muted = new SolidBrush(Palette.Muted);
-        g.DrawString("CodexLimitTray", title, text, 74, 22);
+        g.DrawString("CodexLimitTray · v" + AppInfo.Version, title, text, 74, 22);
         g.DrawString(L10n.T("Kalan kullanım hakkın"), sub, muted, 75, 47);
         var plan = subtitle.Contains('·') ? subtitle.Split('·')[^1].Trim() : "CODEX";
         using var planFont = Palette.Font(8, FontStyle.Bold);
         var planWidth = Math.Max(43, g.MeasureString(plan, planFont).Width + 20);
         using var chip = ModernShape.Round(new RectangleF(24, 77, planWidth, 20), 10);
-        using var chipFill = new SolidBrush(Color.FromArgb(30, 41, 55)); g.FillPath(chipFill, chip);
+        using var chipFill = new SolidBrush(Palette.Chip); g.FillPath(chipFill, chip);
         using var centered = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
         g.DrawString(plan, planFont, muted, new RectangleF(24, 77, planWidth, 20), centered);
         using var dot = new SolidBrush(live ? Palette.Mint : Palette.Muted);
@@ -129,8 +135,8 @@ internal sealed class WindowCard : Control
     {
         var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
         using var path = ModernShape.Round(new RectangleF(.5f, .5f, Width - 1, Height - 1), 17);
-        using var fill = new LinearGradientBrush(ClientRectangle, Color.FromArgb(29, 39, 53), Color.FromArgb(24, 32, 44), 60);
-        g.FillPath(fill, path); using var border = new Pen(Color.FromArgb(44, 59, 77)); g.DrawPath(border, path);
+        using var fill = new LinearGradientBrush(ClientRectangle, Palette.Card, Palette.CardBottom, 60);
+        g.FillPath(fill, path); using var border = new Pen(Palette.Border); g.DrawPath(border, path);
         using var small = Palette.Font(8.5f); using var big = new Font("Segoe UI Semibold", 31, FontStyle.Regular); using var label = Palette.Font(9.5f, FontStyle.Bold);
         using var muted = new SolidBrush(Palette.Muted); using var text = new SolidBrush(Palette.Text);
         var color = fresh ? Palette.For(window.Remaining) : Palette.Muted;
@@ -144,7 +150,7 @@ internal sealed class WindowCard : Control
         g.DrawString(fresh ? L10n.T("kalan") : L10n.T("eski veri"), small, accent, new RectangleF(291, y, 62, 22), centered);
         g.DrawString(L10n.Percent(window.Remaining), big, accent, 14, y + 20);
         var bar = new RectangleF(18, y + 79, Width - 36, 6);
-        using var track = new SolidBrush(Color.FromArgb(48, 62, 80));
+        using var track = new SolidBrush(Palette.Track);
         using var trackPath = ModernShape.Round(bar, 3); g.FillPath(track, trackPath);
         if (window.Remaining > 0)
         {

@@ -15,9 +15,11 @@ Do **not** publish credentials, raw Codex authentication files, real account ide
 - CLT is a normal Windows desktop process, not a sandbox. It runs with the permissions of the user launching it.
 - It launches a local `codex.exe` using argument lists and stdio. A replaced or malicious Codex executable, an untrusted `CLT_CODEX_PATH`, or a poisoned `PATH` is outside a safe setup. Install Codex from a trusted source.
 - The Codex helper handles authentication and may load its own user configuration. Its implementation and services are separate dependencies, not audited by this project.
-- CLT sends initialization and rate-limit-read requests only. It rejects unsolicited server requests rather than approving tools, prompts, or account changes.
+- On the Codex connection, CLT sends initialization and rate-limit-read requests only. It rejects unsolicited server requests rather than approving tools, prompts, or account changes.
 - The taskbar widget uses Windows window ownership, event hooks, and a layered window. It does not inject code into Explorer or open a remote control endpoint.
 - Named single-instance IPC is local to the Windows session and only requests opening the panel. It does not accept arbitrary commands or file paths.
+
+A manual update check reads version metadata from this repository's fixed GitHub API endpoint. Release destinations are constructed from parsed numeric versions under this repository; CLT never executes a downloaded updater.
 
 ## Release practices
 

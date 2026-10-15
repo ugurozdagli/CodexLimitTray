@@ -4,6 +4,16 @@ Windows görev çubuğunda Codex aboneliğinin **kalan** kullanım yüzdeleri. N
 
 Arayüz dili Windows'un görüntüleme diline göre otomatik seçilir: Türkçe Windows'ta Türkçe, İngilizce ve diğer dillerde İngilizce. Bölge ayarı dil seçimini değiştirmez. Windows dilini değiştirirsen CLT'yi yeniden başlat.
 
+## v1.4 ayarları ve bildirimler
+
+Paneldeki dişli düğmesinden veya sağ tık → **Ayarlar** ile görünümü düzenleyebilirsin. Koyu/açık/sistem panel teması, üç gösterge yazı boyutu, detaylı görünümde tarih/geri sayım/gizleme ve monitör seçimi bulunur. Seçilen ekranın görev çubuğu yoksa ana ekrana dönülür. Karma DPI ve Uzak Masaüstü düzenleri daha geniş cihaz testi gerektiriyor.
+
+Bildirimler varsayılan olarak kapalıdır. Düşük kota bildirimini açarsan başlangıç eşikleri kalan **%20 / %5** olur; değiştirebilirsin. İlk okuma sessizdir, aynı eşik aynı limit döneminde tekrarlanmaz. Hesap değişimi, bağlantı hatası veya uzun aradan sonra sessiz başlangıç yapılır. Bildirimler için Codex'in hesap devamlılığını bildirmesi gerekir; eski Codex sürümlerini güncellemek gerekebilir.
+
+Kota yenilendi bildirimi için yeni canlı okumada yenilenme zamanı ilerlemeli, eski yenilenme zamanı geçmiş olmalı, kalan kota en az 10 puan artmalı ve Codex kullanım iznini doğrulamalıdır. Sayaç sıfıra inince yenilenmiş sayılmaz. CLT kapalıyken bildirim yapılmaz; Windows'un bildirim izinleri de açık olmalı.
+
+**Güncellemeleri kontrol et**, yalnızca tıklayınca GitHub'a sürüm sorgusu gönderir. Hesap/kota bilgisi göndermez, dosya indirip çalıştırmaz. Yeni sürüm için CLT'yi kapatıp EXE'yi değiştir. Ayarlar ve önceki kopyası yerel app-data klasöründe korunur.
+
 ## Çalıştırma
 
 İndirilen paketi kalıcı bir klasöre çıkarıp `CodexLimitTray.exe` dosyasına çift tıkla. Kaynaktan derlediysen `release\CodexLimitTray.exe` dosyasını çalıştır. İki satırlı gösterge görev çubuğunun sağında, sistem tepsisi alanının hemen solunda görünür. NetSpeedTray çalışıyorsa onun soluna yerleşmeye çalışır. `^` menüsündeki ek CLT simgesi yönetim için de kullanılabilir.

@@ -23,8 +23,9 @@ internal sealed class TaskbarWidget : Form
     private Native.WinEventProc? windowEvent;
     private IntPtr foregroundHook, reorderHook;
     private bool updateQueued;
+    private IntPtr ownerTaskbar;
     internal bool PositionLocked => settings.WidgetLocked;
-    internal bool LayerOrderReady => IsHandleCreated && Native.GetWindow(Handle, 4) == Native.FindWindow("Shell_TrayWnd", null) && foregroundHook != IntPtr.Zero && reorderHook != IntPtr.Zero;
+    internal bool LayerOrderReady => IsHandleCreated && ownerTaskbar != IntPtr.Zero && Native.GetWindow(Handle, 4) == ownerTaskbar && foregroundHook != IntPtr.Zero && reorderHook != IntPtr.Zero;
     protected override bool ShowWithoutActivation => true;
     protected override CreateParams CreateParams
     {
@@ -61,7 +62,7 @@ internal sealed class TaskbarWidget : Form
         windowEvent = (_, eventType, hwnd, objectId, childId, _, _) =>
         {
             if (IsDisposed || !IsHandleCreated || updateQueued) return;
-            if (eventType != 3 && (hwnd != Native.FindWindow("Shell_TrayWnd", null) || objectId != 0 || childId != 0)) return;
+            if (eventType != 3 && (hwnd != ownerTaskbar || objectId != 0 || childId != 0)) return;
             updateQueued = true;
             try { BeginInvoke(() => { updateQueued = false; if (!IsDisposed) UpdatePosition(restack: true); }); }
             catch (InvalidOperationException) { updateQueued = false; }
@@ -72,22 +73,27 @@ internal sealed class TaskbarWidget : Form
     public void SetState(UsageSnapshot? data, bool isFresh)
     {
         snapshot = data; fresh = isFresh;
-        tooltip.SetToolTip(this, !fresh ? L10n.T("CLT · Güncel kullanım verisi bekleniyor") : L10n.T("CLT · Kalan kullanım\n{0}: {1}\n{2}: {3}\nSol tık: ayrıntılar · Sağ tık: ayarlar", data!.Main.Primary?.Duration, data.Main.Primary is { } p ? L10n.Percent(p.Remaining) : "—", data.Main.Secondary?.Duration, data.Main.Secondary is { } s ? L10n.Percent(s.Remaining) : "—"));
+        tooltip.SetToolTip(this, !fresh || data is null ? L10n.T("CLT · Güncel kullanım verisi bekleniyor") :
+            L10n.Text("CLT · Kalan kullanım", "CLT · Remaining usage") + "\n" +
+            string.Join("\n", VisibleWindows(data).OfType<UsageWindow>().Select(w => $"{w.Duration}: {L10n.Percent(w.Remaining)}")) + "\n" +
+            L10n.Text("Sol tık: ayrıntılar · Sağ tık: ayarlar", "Left click: details · Right click: settings"));
         UpdatePosition(); Render();
     }
     public void ResetPosition() { settings.WidgetGap = 8; save(); UpdatePosition(); }
     private void UpdatePosition(bool restack = false)
     {
         if (!settings.WidgetEnabled) { Hide(); return; }
-        var info = GetTaskbarInfo();
+        var info = GetTaskbarInfo(settings.DisplayKey);
         if (info is null) { Hide(); return; }
-        var (taskbar, trayLeft, dpi) = info.Value;
+        var (taskbar, trayLeft, dpi, taskbarHandle) = info.Value;
+        ownerTaskbar = taskbarHandle;
         if (Native.IsFullScreen(taskbar)) { Hide(); return; }
-        var nextScale = dpi / 96f;
+        var nextScale = dpi / 96f * settings.TextScale;
         var resized = Math.Abs(scale - nextScale) > .01f;
         scale = nextScale;
-        var width = (int)Math.Round((settings.WidgetDetailed ? DetailedSize.Width : LogicalSize.Width) * scale);
-        var height = Math.Min(taskbar.Height, (int)Math.Round(LogicalSize.Height * scale));
+        var measured = MeasureWidget(snapshot, fresh, scale, settings.WidgetDetailed, settings.ResetDisplay);
+        var width = measured.Width;
+        var height = Math.Min(taskbar.Height, measured.Height);
         anchor = trayLeft;
         var x = Math.Clamp(anchor - width - settings.WidgetGap, taskbar.Left, Math.Max(taskbar.Left, taskbar.Right - width));
         var y = taskbar.Top + (taskbar.Height - height) / 2;
@@ -98,7 +104,6 @@ internal sealed class TaskbarWidget : Form
         if (!Visible) { Show(); rendered = false; restack = true; }
         // Owned windows stay above their owner when Explorer raises the taskbar.
         // Only CLT's own window is changed; Explorer's styles and code are untouched.
-        var taskbarHandle = Native.FindWindow("Shell_TrayWnd", null);
         if (taskbarHandle != IntPtr.Zero && Native.GetWindow(Handle, 4) != taskbarHandle)
         {
             Native.SetWindowLongPtr(Handle, -8, taskbarHandle);
@@ -108,16 +113,25 @@ internal sealed class TaskbarWidget : Form
             Native.SetWindowPos(Handle, new IntPtr(-1), x, y, width, height, 0x10 | 0x40);
         if (resized || sizeChanged || !rendered) Render();
     }
-    internal static (Rectangle Taskbar, int Anchor, uint Dpi)? GetTaskbarInfo()
+    internal static (Rectangle Taskbar, int Anchor, uint Dpi, IntPtr Handle)? GetTaskbarInfo(string? displayKey = null)
     {
         var handle = Native.FindWindow("Shell_TrayWnd", null);
+        var selected = DisplayCatalog.Resolve(displayKey);
+        Native.EnumProc findTaskbar = (window, _) =>
+        {
+            var name = new StringBuilder(128); Native.GetClassName(window, name, name.Capacity);
+            if (name.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" && Native.GetWindowRect(window, out var bounds) &&
+                Screen.FromRectangle(bounds.Rectangle).DeviceName == selected) handle = window;
+            return true;
+        };
+        Native.EnumWindows(findTaskbar, IntPtr.Zero);
         if (handle == IntPtr.Zero || !Native.IsWindowVisible(handle) || !Native.GetWindowRect(handle, out var r)) return null;
         var taskbar = r.Rectangle;
         if (taskbar.Width < taskbar.Height || taskbar.Height < 8) return null;
         var monitor = Screen.FromRectangle(taskbar).Bounds;
         if (!monitor.IntersectsWith(taskbar) || taskbar.Top >= monitor.Bottom - 2) return null;
         var tray = Native.FindWindowEx(handle, IntPtr.Zero, "TrayNotifyWnd", null);
-        var anchor = tray != IntPtr.Zero && Native.GetWindowRect(tray, out var tr) ? tr.Left : taskbar.Right - 340;
+        var anchor = tray != IntPtr.Zero && Native.GetWindowRect(tray, out var tr) ? tr.Left : taskbar.Right - (Screen.FromRectangle(taskbar).Primary ? 340 : 120);
         // Place CLT before an existing NetSpeedTray widget instead of covering it.
         var netPids = Process.GetProcessesByName("NetSpeedTray").Select(p => { using (p) return (uint)p.Id; }).ToHashSet();
         if (netPids.Count > 0)
@@ -136,38 +150,64 @@ internal sealed class TaskbarWidget : Form
             Native.EnumChildWindows(handle, inspect, IntPtr.Zero);
         }
         var dpi = Native.GetDpiForWindow(handle);
-        return (taskbar, anchor, dpi is >= 96 and <= 480 ? dpi : 96);
+        return (taskbar, anchor, dpi is >= 96 and <= 480 ? dpi : 96, handle);
     }
-    internal static Bitmap DrawWidget(UsageSnapshot? data, bool fresh, Size size, float scale = 1, bool detailed = false)
+    internal static UsageWindow?[] VisibleWindows(UsageSnapshot? data)
+    {
+        if (data is null) return [null, null];
+        return new[] { data.Main.Primary, data.Main.Secondary }.Where(w => w is not null).ToArray();
+    }
+    private static string ResetLabel(UsageWindow? window, bool fresh, ResetDisplay display)
+        => !fresh || window is null ? "—" : display == ResetDisplay.Countdown ? window.CompactCountdown(DateTimeOffset.Now) : window.ResetText;
+    private static (float Label, float Value, float Reset) Columns(Graphics g, UsageSnapshot? data, bool fresh, float scale, bool detailed, ResetDisplay reset)
+    {
+        using var font = new Font("Segoe UI", 12 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var valueFont = new Font("Segoe UI", 12 * scale, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var dateFont = new Font("Segoe UI", 11 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
+        var windows = VisibleWindows(data);
+        var labels = windows.Select(w => detailed ? w?.Duration ?? L10n.T("Limit") : w?.CompactDuration ?? "—");
+        float Width(string text, Font f) => (float)Math.Ceiling(g.MeasureString(text, f, 1000, StringFormat.GenericTypographic).Width);
+        var label = Math.Max((detailed ? 44 : 16) * scale, labels.Max(t => Width(t, font)));
+        var value = Math.Max(30 * scale, Width(L10n.Percent(100), valueFont));
+        var date = detailed && reset != ResetDisplay.Hidden ? Math.Max(36 * scale, windows.Max(w => Width(ResetLabel(w, fresh, reset), dateFont))) : 0;
+        return (label, value, date);
+    }
+    internal static Size MeasureWidget(UsageSnapshot? data, bool fresh, float scale = 1, bool detailed = false, ResetDisplay reset = ResetDisplay.Date)
+    {
+        using var bitmap = new Bitmap(1, 1); using var g = Graphics.FromImage(bitmap);
+        var c = Columns(g, data, fresh, scale, detailed, reset);
+        return new Size((int)Math.Ceiling(c.Label + c.Value + 12 * scale + (c.Reset > 0 ? c.Reset + 14 * scale : 0)), (int)Math.Ceiling(16 * scale * VisibleWindows(data).Length));
+    }
+    internal static Bitmap DrawWidget(UsageSnapshot? data, bool fresh, Size size, float scale = 1, bool detailed = false, ResetDisplay resetDisplay = ResetDisplay.Date, bool? lightTaskbar = null)
     {
         var bitmap = new Bitmap(size.Width, size.Height, PixelFormat.Format32bppArgb);
         using var g = Graphics.FromImage(bitmap);
-        // Fully transparent pixels outside the content pass clicks to the taskbar.
         g.Clear(Color.Transparent);
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+        var light = lightTaskbar ?? Palette.WindowsLight(taskbar: true);
         using var font = new Font("Segoe UI", 12 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         using var valueFont = new Font("Segoe UI", 12 * scale, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var dateFont = new Font("Segoe UI", 11 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
         using var format = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap, LineAlignment = StringAlignment.Center };
-        using var labelBrush = new SolidBrush(Color.FromArgb(175, 190, 208));
-        var windows = new[] { data?.Main.Primary, data?.Main.Secondary };
-        for (var i = 0; i < 2; i++)
+        using var labelBrush = new SolidBrush(light ? Color.FromArgb(49, 65, 83) : Color.FromArgb(175, 190, 208));
+        var columns = Columns(g, data, fresh, scale, detailed, resetDisplay);
+        var windows = VisibleWindows(data);
+        for (var i = 0; i < windows.Length; i++)
         {
             var window = windows[i];
-            var label = detailed ? window?.Duration ?? (i == 0 ? L10n.T("Kısa") : L10n.T("Haftalık")) : i == 0 ? (window?.Minutes == 300 ? L10n.T("5s") : L10n.T("Ks")) : L10n.T("Hf");
+            var label = detailed ? window?.Duration ?? L10n.T("Limit") : window?.CompactDuration ?? "—";
             var value = fresh && window is not null ? L10n.Percent(window.Remaining) : "—";
-            var row = new RectangleF(3 * scale, i * size.Height / 2f, (detailed ? 47 : 21) * scale, size.Height / 2f);
+            var row = new RectangleF(3 * scale, i * size.Height / (float)windows.Length, columns.Label, size.Height / (float)windows.Length);
             g.DrawString(label, font, labelBrush, row, format);
-            using var valueBrush = new SolidBrush(fresh && window is not null ? Palette.For(window.Remaining) : Palette.Muted);
-            var valueRow = new RectangleF((detailed ? 53 : 25) * scale, row.Y, 36 * scale, row.Height);
+            using var valueBrush = new SolidBrush(fresh && window is not null ? Palette.For(window.Remaining, light) : labelBrush.Color);
+            var valueRow = new RectangleF(row.Right + 5 * scale, row.Y, columns.Value + scale, row.Height);
             g.DrawString(value, valueFont, valueBrush, valueRow, format);
-            if (detailed)
+            if (columns.Reset > 0)
             {
-                var reset = fresh && window is not null ? window.ResetText : "—";
-                using var dateFont = new Font("Segoe UI", 11 * scale, FontStyle.Regular, GraphicsUnit.Pixel);
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                using var dotBrush = new SolidBrush(Color.FromArgb(199, 211, 225));
-                g.FillEllipse(dotBrush, 91 * scale, row.Y + (row.Height - 2.6f * scale) / 2, 2.6f * scale, 2.6f * scale);
-                g.DrawString(reset, dateFont, labelBrush, new RectangleF(98 * scale, row.Y, size.Width - 100 * scale, row.Height), format);
+                var dotX = valueRow.Right + 5 * scale;
+                g.FillEllipse(labelBrush, dotX, row.Y + (row.Height - 2.6f * scale) / 2, 2.6f * scale, 2.6f * scale);
+                g.DrawString(ResetLabel(window, fresh, resetDisplay), dateFont, labelBrush, new RectangleF(dotX + 7 * scale, row.Y, columns.Reset + 2 * scale, row.Height), format);
             }
         }
         ApplyContentHitArea(bitmap);
@@ -194,7 +234,7 @@ internal sealed class TaskbarWidget : Form
     private void Render()
     {
         if (!IsHandleCreated || Width < 1 || Height < 1) return;
-        using var bitmap = DrawWidget(snapshot, fresh, ClientSize, scale, settings.WidgetDetailed);
+        using var bitmap = DrawWidget(snapshot, fresh, ClientSize, scale, settings.WidgetDetailed, settings.ResetDisplay);
         Native.ApplyBitmap(Handle, bitmap, Location); rendered = true;
     }
     protected override void Dispose(bool disposing)
@@ -236,7 +276,7 @@ internal sealed class TaskbarWidget : Form
         [DllImport("user32.dll")] internal static extern bool EnumChildWindows(IntPtr parent, EnumProc proc, IntPtr param);
         [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int max);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetClassName(IntPtr window, StringBuilder text, int max);
         [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr window);
         [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);
         [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);

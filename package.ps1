@@ -11,7 +11,7 @@ $distributionDirectory = Join-Path $projectRoot 'dist'
 & (Join-Path $projectRoot 'build.ps1') -SelfContained -Dotnet $Dotnet -OutputDirectory $buildDirectory
 New-Item -ItemType Directory -Force -Path $stagingDirectory, $distributionDirectory | Out-Null
 # Explicit allowlist. Never package the working directory recursively.
-$documents = @('README.md','LICENSE','THIRD-PARTY-NOTICES.txt','PRIVACY.md','SECURITY.md','CHANGELOG.md','docs\README.tr.md','docs\TROUBLESHOOTING.md','docs\VERIFYING-DOWNLOADS.md','docs\images\hero.svg','docs\images\usage-panel.png','docs\images\taskbar-simple.png','docs\images\taskbar-detailed.png')
+$documents = @('README.md','LICENSE','THIRD-PARTY-NOTICES.txt','PRIVACY.md','SECURITY.md','CHANGELOG.md','docs\README.tr.md','docs\TROUBLESHOOTING.md','docs\VERIFYING-DOWNLOADS.md','docs\images\hero.svg','docs\images\usage-panel.png','docs\images\taskbar-simple.png','docs\images\taskbar-detailed.png','docs\images\settings.png','docs\images\usage-panel-light.png')
 Copy-Item -LiteralPath (Join-Path $buildDirectory 'CodexLimitTray.exe') -Destination (Join-Path $stagingDirectory 'CodexLimitTray.exe')
 foreach ($document in $documents) {
     $target = Join-Path $stagingDirectory $document

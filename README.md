@@ -29,7 +29,7 @@ No extra API key. No CLT account. No dashboard to keep open. Use the Codex accou
 
 ## Screenshots
 
-These previews are rendered by the application using **fictional demo data**. They do not show the maintainer's account. The screenshots show the Turkish interface. CLT automatically uses **Turkish on Turkish Windows display languages and English on all other display languages**. Restart CLT after changing the Windows display language.
+These previews are rendered by the application using **fictional demo data**. They do not show the maintainer's account. The previews include Turkish and English interfaces. CLT automatically uses **Turkish on Turkish Windows display languages and English on all other display languages**. Restart CLT after changing the Windows display language.
 
 ### At a glance
 
@@ -44,6 +44,14 @@ These previews are rendered by the application using **fictional demo data**. Th
   <img src="docs/images/usage-panel.png" alt="Rounded dark usage panel showing short-term and weekly limits, reset countdowns, refresh and startup controls in Turkish" width="420" />
 </p>
 
+### Make it yours
+
+| Settings | Light theme |
+| --- | --- |
+| <img src="docs/images/settings.png" alt="English settings with theme, text size, reset format, display selection, and optional notifications" width="420" /> | <img src="docs/images/usage-panel-light.png" alt="English light-theme usage panel with fictional demo data" width="340" /> |
+
+Open the gear button in the usage panel, or right-click the widget and choose **Settings**. The current compact dark appearance remains the default.
+
 ## What you get
 
 | Feature | What it does |
@@ -52,23 +60,27 @@ These previews are rendered by the application using **fictional demo data**. Th
 | Simple / Detailed views | Keep it compact, or add the reset date and time to each row. |
 | Color at a glance | Green above 35%, amber at 16–35%, red at 0–15% remaining. |
 | Detail panel | Rounded dark cards, smooth text, remaining bars, reset countdowns, and last refresh. |
-| Automatic refresh | Checks every 60 seconds; manual refresh is one click away. |
+| Automatic refresh | Checks every 60 seconds when healthy; backs off after failures and refreshes after resume. |
 | Honest connection state | Shows a dash when data is unavailable; old data is labeled in the panel. |
 | Move & lock | Drag horizontally, lock the position, or reset it from the context menu. |
 | Optional startup | Start with Windows if you choose. Off by default. |
 | Tray fallback | A small percentage icon provides another way to open the panel and settings. |
+| Optional notifications | Configurable warning/critical thresholds and backend-confirmed replenishment. Off by default. |
+| Appearance settings | Dark/light/system panel themes, three widget text sizes, and date/countdown/hidden reset details. |
+| Display selection | One selected horizontal taskbar, with primary-display fallback if unavailable. |
+| Update check | Manually check GitHub Releases from Settings; downloads and installation stay under your control. |
 | English & Turkish | Automatically follows the Windows display language; English is the fallback. Includes menus, errors, countdowns, and localized reset dates. |
 
 ## Download & run
 
 1. Open the [latest release](https://github.com/ugurozdagli/CodexLimitTray/releases/latest).
-2. Download **`CodexLimitTray-v1.3.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
+2. Download **`CodexLimitTray-v1.4.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
 3. Save the EXE in a permanent folder and run it. For the ZIP, extract first and run **`CodexLimitTray.exe`**.
 4. Make sure Codex is installed and signed in with your own ChatGPT account.
 
 Both downloads are **self-contained** Windows x64 builds with the .NET runtime included. There is no installer wizard or .NET prerequisite. Preferences still live in your current user's local app-data folder; see [Privacy](PRIVACY.md). Codex itself is a separate prerequisite and is **not bundled**.
 
-**Target:** Windows 11 x64 with the primary monitor's horizontal taskbar. Windows 10, vertical taskbars, and native ARM64 builds are not part of the currently verified setup.
+**Target:** Windows 11 x64 with a horizontal taskbar. Display selection is available; mixed-DPI multi-monitor and Remote Desktop setups still need broader device testing. Windows 10, vertical taskbars, and native ARM64 builds are not part of the currently verified setup.
 
 Releases include **SHA-256 checksums** and **GitHub build-provenance attestations** so you can check file integrity and which repository/workflow built the download. See [Verify your download](docs/VERIFYING-DOWNLOADS.md). These are not Windows publisher signatures or a guarantee of safety: the initial build is **not code-signed**, and an unknown-publisher warning is possible. Do not disable Windows security features to run it. Building from source is also supported.
 
@@ -86,6 +98,16 @@ Releases include **SHA-256 checksums** and **GitHub build-provenance attestation
 | `Çıkış` | Exit. |
 
 **Left-click** the widget to open the panel. **Right-click** for settings. **Drag** horizontally to reposition it. Escape or a click outside closes the panel. Launching CLT again opens the existing instance.
+
+## Notifications and settings
+
+Notifications are **off by default**. Enable low-quota or replenishment notices in Settings; the initial warning/critical thresholds are **20% / 5% remaining**, and are editable. Windows notification settings can suppress delivery.
+
+The first live reading is silent. Thresholds notify once per window, and account changes, failures, or observation gaps establish a new baseline. Account continuity must be supplied by Codex; older Codex versions may still show usage while notifications remain unavailable. Replenishment additionally requires a forward reset-window change, at least a 10-point increase, and explicit backend permission for ordinary usage. A countdown reaching zero never claims recovery. There are no notifications for changes while CLT is closed.
+
+Panel theme and taskbar contrast are separate: the widget follows the Windows taskbar theme. Text size changes widget bounds and click-through margins together. Reset format applies to **Detailed** view. Display choices retain monitor identity and fall back to the primary taskbar if the chosen display/taskbar is unavailable.
+
+Old preferences are preserved. Settings use atomic replacement and a previous-copy backup. Updating still means exiting CLT and replacing the EXE; **Check for updates** opens the relevant release page after your confirmation and does not execute downloads.
 
 ## How it works
 
@@ -105,7 +127,7 @@ An explicit `CLT_CODEX_PATH` environment variable can point to a trusted `codex.
 ## Privacy & security
 
 - **Your account stays yours.** An installed copy reads the Codex session on that computer; the maintainer's account is not included in the release.
-- **No CLT telemetry or usage-history database.** The application stores display preferences locally and keeps the current usage snapshot in memory.
+- **No CLT telemetry or usage-history database.** Preferences and a backup stay local. Current usage and a one-way account fingerprint for notification continuity stay in memory only. A user-initiated update check contacts GitHub without sending quota or account data.
 - **No administrator prompt.** Optional startup uses the current user's Windows startup registry entry.
 - **No credential bundle.** Source and release packages exclude local shortcuts, account files, settings, scratch files, and private keys. Release debug symbols are disabled.
 - **Read-only protocol use.** Unexpected app-server requests are rejected; CLT does not approve tool execution.
@@ -146,6 +168,7 @@ Additional `--smoke-test`, `--smoke-test-error`, `--diagnose`, and live `--previ
 ## Limits worth knowing
 
 - The widget is a transparent window over the taskbar. Windows does not reserve space for it; drag it into a free area if taskbar buttons overlap.
+- Display selection uses one horizontal taskbar at a time; mixed-DPI multi-monitor/RDP combinations need wider testing.
 - Full-screen applications hide the widget. Normal maximized windows and the task switcher are treated separately.
 - Codex can return different windows or no subscription limit data. API-key billing is not the same as ChatGPT subscription allowances.
 - Missing data is shown as unavailable, rather than guessed. Data older than three minutes is treated as stale.

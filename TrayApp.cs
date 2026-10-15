@@ -6,18 +6,6 @@ using Microsoft.Win32;
 
 namespace CodexLimitTray;
 
-internal sealed class Settings
-{
-    public bool Weekly { get; set; }
-    public bool WidgetEnabled { get; set; } = true;
-    public bool WidgetDetailed { get; set; }
-    public bool WidgetLocked { get; set; }
-    public int WidgetGap { get; set; } = 8;
-    private static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexLimitTray", "settings.json");
-    public static Settings Load() { try { return JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new(); } catch { return new(); } }
-    public void Save() { Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!); File.WriteAllText(FilePath, JsonSerializer.Serialize(this)); }
-}
-
 internal static class Startup
 {
     const string Key = @"Software\Microsoft\Windows\CurrentVersion\Run";
@@ -32,8 +20,26 @@ internal static class Startup
 
 internal static class Palette
 {
-    public static readonly Color Background = Color.FromArgb(17, 22, 30), Card = Color.FromArgb(27, 34, 45), Text = Color.FromArgb(237, 242, 247), Muted = Color.FromArgb(149, 163, 181), Mint = Color.FromArgb(95, 231, 185);
-    public static Color For(int remaining) => remaining <= 15 ? Color.FromArgb(255, 113, 125) : remaining <= 35 ? Color.FromArgb(255, 200, 98) : Mint;
+    public static bool Light { get; private set; }
+    public static Color Background => Light ? Color.FromArgb(244, 247, 251) : Color.FromArgb(17, 22, 30);
+    public static Color Card => Light ? Color.White : Color.FromArgb(29, 39, 53);
+    public static Color CardBottom => Light ? Color.FromArgb(237, 242, 248) : Color.FromArgb(24, 32, 44);
+    public static Color Text => Light ? Color.FromArgb(24, 34, 46) : Color.FromArgb(237, 242, 247);
+    public static Color Muted => Light ? Color.FromArgb(77, 94, 115) : Color.FromArgb(149, 163, 181);
+    public static Color Mint => Light ? Color.FromArgb(12, 126, 95) : Color.FromArgb(95, 231, 185);
+    public static Color Border => Light ? Color.FromArgb(194, 205, 218) : Color.FromArgb(44, 59, 77);
+    public static Color Track => Light ? Color.FromArgb(210, 220, 232) : Color.FromArgb(48, 62, 80);
+    public static Color Chip => Light ? Color.FromArgb(224, 233, 240) : Color.FromArgb(30, 41, 55);
+    public static Color PrimaryText => Light ? Color.White : Color.FromArgb(15, 44, 35);
+    public static bool WindowsLight(bool taskbar = false)
+    {
+        try { using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"); return key?.GetValue(taskbar ? "SystemUsesLightTheme" : "AppsUseLightTheme") is int value && value != 0; }
+        catch { return false; }
+    }
+    public static void Apply(ThemeMode theme) => Light = theme == ThemeMode.Light || theme == ThemeMode.System && WindowsLight();
+    public static Color For(int remaining, bool? light = null) => (light ?? Light)
+        ? remaining <= 15 ? Color.FromArgb(188, 36, 62) : remaining <= 35 ? Color.FromArgb(145, 90, 0) : Color.FromArgb(12, 126, 95)
+        : remaining <= 15 ? Color.FromArgb(255, 113, 125) : remaining <= 35 ? Color.FromArgb(255, 200, 98) : Color.FromArgb(95, 231, 185);
     public static Font Font(float size, FontStyle style = FontStyle.Regular) => new("Segoe UI", size, style, GraphicsUnit.Point);
 }
 
@@ -48,7 +54,7 @@ internal static class TrayDrawing
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
         using var font = new Font("Segoe UI", remaining == 100 ? 17 : 22, FontStyle.Bold, GraphicsUnit.Pixel);
         var text = remaining?.ToString() ?? "–";
-        using var brush = new SolidBrush(remaining is { } n ? Palette.For(n) : Palette.Muted);
+        using var brush = new SolidBrush(remaining is { } n ? Palette.For(n, Palette.WindowsLight(taskbar: true)) : Palette.Muted);
         using var format = new StringFormat(StringFormat.GenericTypographic) { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
         g.DrawString(text, font, brush, new RectangleF(0, 0, 32, 32), format);
         var handle = bmp.GetHicon();
@@ -67,6 +73,11 @@ internal sealed class TrayApp : ApplicationContext
     private readonly Settings settings = Settings.Load();
     private readonly ContextMenuStrip menu = new();
     private readonly ToolStripMenuItem shortMode = new(L10n.T("Kısa dönem kalan %")), weeklyMode = new(L10n.T("Haftalık kalan %")), startupItem = new(L10n.T("Windows ile başlat"));
+    private readonly QuotaAlerts alerts = new();
+    private SettingsForm? settingsDialog;
+    private bool checkingUpdates;
+    private DateTimeOffset lastAttempt = DateTimeOffset.MinValue;
+    private int failures;
     private UsageSnapshot? snapshot;
     private string? error;
     private bool busy, exiting;
@@ -81,9 +92,12 @@ internal sealed class TrayApp : ApplicationContext
     public TrayApp(EventWaitHandle showEvent)
     {
         this.showEvent = showEvent;
+        Palette.Apply(settings.Theme);
         _ = dispatcher.Handle;
         wait = ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => { try { dispatcher.BeginInvoke(() => ShowPopup()); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
-        menu.Items.Add("CLT · CodexLimitTray", null, (_, _) => ShowPopup());
+        menu.Items.Add("CLT · v" + AppInfo.Version, null, (_, _) => ShowPopup());
+        menu.Items.Add(L10n.Text("Ayarlar…", "Settings…"), null, (_, _) => ShowSettings());
+        menu.Items.Add(L10n.Text("Güncellemeleri kontrol et", "Check for updates"), null, async (_, _) => await CheckUpdatesAsync());
         menu.Items.Add(L10n.T("Şimdi yenile"), null, async (_, _) => await RefreshAsync());
         var widgetItem = new ToolStripMenuItem(L10n.T("Görev çubuğunda iki satır"));
         var lockItem = new ToolStripMenuItem(L10n.T("Gösterge konumunu kilitle"));
@@ -113,10 +127,76 @@ internal sealed class TrayApp : ApplicationContext
         tray.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) { if (popup?.Visible == true) popup.Hide(); else ShowPopup(); } };
         widget = new TaskbarWidget(settings, menu, () => ShowPopup(), SaveSettings);
         UpdateTray(); tray.Visible = true;
-        poll.Tick += async (_, _) => { poll.Interval = 60000; await RefreshAsync(); };
+        poll.Tick += async (_, _) => { await RefreshAsync(); };
         clock.Tick += (_, _) => { UpdateTray(); UpdatePopup(); };
+        ApplyMenuColors();
+        SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        SystemEvents.PowerModeChanged += OnPowerModeChanged;
         poll.Start(); clock.Start();
     }
+
+    private void ShowSettings()
+    {
+        popup?.Hide();
+        if (settingsDialog is { IsDisposed: false }) { settingsDialog.Activate(); return; }
+        settingsDialog = new SettingsForm(settings, () =>
+        {
+            SaveSettings(); alerts.Reset(); ApplyAppearance(); UpdateTray();
+        }, () => _ = CheckUpdatesAsync(), snapshot?.AccountKey is not null);
+        settingsDialog.Show();
+    }
+    private void ApplyAppearance()
+    {
+        Palette.Apply(settings.Theme);
+        popup?.Dispose(); popup = null;
+        ApplyMenuColors();
+        widget?.SetState(snapshot, Fresh);
+    }
+    private void ApplyMenuColors()
+    {
+        menu.Renderer = new ToolStripProfessionalRenderer(new MenuColors());
+        void PaintItems(ToolStripItemCollection items)
+        {
+            foreach (ToolStripItem item in items)
+            {
+                item.ForeColor = Palette.Text; item.BackColor = Palette.Background;
+                if (item is ToolStripMenuItem sub) PaintItems(sub.DropDownItems);
+            }
+        }
+        PaintItems(menu.Items);
+    }
+    private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) => QueueUi(() => { ApplyAppearance(); UpdateTray(); });
+    private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
+    {
+        if (e.Mode == PowerModes.Resume) QueueUi(() => { alerts.Reset(); _ = RefreshAsync(afterResume: true); });
+    }
+    private void QueueUi(Action action)
+    {
+        try { if (!exiting && !dispatcher.IsDisposed) dispatcher.BeginInvoke(() => { if (!exiting) action(); }); }
+        catch (InvalidOperationException) { }
+    }
+    private async Task CheckUpdatesAsync()
+    {
+        if (checkingUpdates || exiting) return;
+        checkingUpdates = true;
+        try
+        {
+            var version = await UpdateChecker.CheckAsync(shutdown.Token);
+            if (exiting) return;
+            var owner = UpdateOwner;
+            if (version is null)
+                MessageBox.Show(owner, L10n.Text("v{0} güncel.", "v{0} is up to date.", AppInfo.Version), "CodexLimitTray", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            else if (MessageBox.Show(owner, L10n.Text("v{0} hazır. İndirme sayfası açılsın mı?", "v{0} is available. Open the download page?", version), "CodexLimitTray", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                Process.Start(new ProcessStartInfo(AppInfo.ReleasesUrl + "/tag/v" + version) { UseShellExecute = true });
+        }
+        catch (OperationCanceledException) when (exiting) { }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or JsonException or IOException or System.ComponentModel.Win32Exception)
+        {
+            if (!exiting) MessageBox.Show(UpdateOwner, L10n.Text("Güncelleme kontrol edilemedi. Bağlantını kontrol edip tekrar dene.", "Could not check for updates. Check your connection and try again."), "CodexLimitTray", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally { checkingUpdates = false; }
+    }
+    private IWin32Window UpdateOwner => settingsDialog is { IsDisposed: false } ? settingsDialog : dispatcher;
 
     private void ChangeMode(bool weekly)
     {
@@ -139,19 +219,33 @@ internal sealed class TrayApp : ApplicationContext
         try { Process.Start(new ProcessStartInfo("ms-settings:taskbar") { UseShellExecute = true }); }
         catch { MessageBox.Show(L10n.T("Görev çubuğuna sağ tıkla → Görev çubuğu ayarları → Diğer sistem tepsisi simgeleri."), "CLT"); }
     }
-    private async Task RefreshAsync()
+    private async Task RefreshAsync(bool afterResume = false)
     {
-        if (busy || exiting) return;
+        if (busy || exiting || !afterResume && DateTimeOffset.Now - lastAttempt < TimeSpan.FromSeconds(10)) return;
+        lastAttempt = DateTimeOffset.Now;
         busy = true; UpdatePopup();
-        try { snapshot = await CodexClient.FetchAsync(shutdown.Token); error = null; }
+        try
+        {
+            snapshot = await CodexClient.FetchAsync(shutdown.Token); error = null; failures = 0; poll.Interval = 60000;
+            var notices = alerts.Observe(snapshot, settings);
+            if (notices.Count > 0)
+            {
+                var body = string.Join("\n", notices.Select(n => n.Replenished
+                    ? L10n.Text("{0}: kota yenilendi · {1}", "{0}: quota replenished · {1}", n.Window, L10n.Percent(n.Remaining))
+                    : L10n.Text("{0}: {1} kaldı", "{0}: {1} remaining", n.Window, L10n.Percent(n.Remaining))));
+                tray.ShowBalloonTip(5000, "CodexLimitTray", body.Length > 255 ? body[..252] + "…" : body, notices.Any(n => n.Critical) ? ToolTipIcon.Warning : ToolTipIcon.Info);
+            }
+        }
         catch (OperationCanceledException) when (exiting) { }
-        catch (Exception ex) { error = ex is TimeoutException or InvalidOperationException or FileNotFoundException or IOException ? ex.Message : L10n.T("Kullanım verisi alınamadı. Codex oturumunu kontrol edip tekrar dene."); }
+        catch (Exception ex) { alerts.Reset(); poll.Interval = Math.Min(300000, 60000 * (1 << Math.Min(++failures, 3))); error = ex is TimeoutException or InvalidOperationException or FileNotFoundException or IOException ? ex.Message : L10n.T("Kullanım verisi alınamadı. Codex oturumunu kontrol edip tekrar dene."); }
         finally { busy = false; if (!exiting) { UpdateTray(); UpdatePopup(); } }
     }
     private bool Fresh => error is null && snapshot is not null && DateTimeOffset.Now - snapshot.FetchedAt < TimeSpan.FromMinutes(3);
     private void UpdateTray()
     {
-        var window = snapshot is null ? null : settings.Weekly ? snapshot.Main.Secondary : snapshot.Main.Primary;
+        shortMode.Text = (snapshot?.Main.Primary?.Duration ?? L10n.T("Kısa")) + " · " + L10n.T("kalan") + " %";
+        weeklyMode.Text = (snapshot?.Main.Secondary?.Duration ?? L10n.T("Haftalık")) + " · " + L10n.T("kalan") + " %";
+        var window = snapshot is null ? null : settings.Weekly ? snapshot.Main.Secondary ?? snapshot.Main.Primary : snapshot.Main.Primary ?? snapshot.Main.Secondary;
         var icon = TrayDrawing.Create(Fresh ? window?.Remaining : null);
         tray.Icon = icon;
         currentIcon?.Dispose(); currentIcon = icon;
@@ -171,7 +265,7 @@ internal sealed class TrayApp : ApplicationContext
         if (exiting) return;
         if (popup is null || popup.IsDisposed)
         {
-            popup = new Popup(() => _ = RefreshAsync(), ToggleStartup, () => ChangeMode(!settings.Weekly));
+            popup = new Popup(() => _ = RefreshAsync(), ToggleStartup, () => ChangeMode(!settings.Weekly), ShowSettings);
             popup.FormClosing += (_, e) => { if (!exiting && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; popup.Hide(); } };
         }
         UpdatePopup();
@@ -185,6 +279,9 @@ internal sealed class TrayApp : ApplicationContext
     {
         if (exiting) return;
         exiting = true; poll.Stop(); clock.Stop(); shutdown.Cancel();
+        SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        settingsDialog?.Dispose();
         wait.Unregister(null); tray.Visible = false; tray.Dispose(); currentIcon?.Dispose();
         popup?.Dispose(); widget?.Dispose(); dispatcher.Dispose(); menu.Dispose(); poll.Dispose(); clock.Dispose();
         base.ExitThreadCore();
