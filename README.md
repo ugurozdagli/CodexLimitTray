@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/hero.svg?v=2" alt="CodexLimitTray — your quota, at a glance" width="960" />
+<img src="docs/images/hero-banner.svg" alt="CodexLimitTray — your quota, at a glance" width="960" />
 
 # CodexLimitTray · CLT
 
