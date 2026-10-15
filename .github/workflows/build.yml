@@ -47,6 +47,25 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 14
+      - name: Download package for transfer verification
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: windows-x64
+          path: work/artifact-roundtrip
+      - name: Verify transferred package integrity
+        shell: pwsh
+        run: |
+          $originals = @(Get-ChildItem dist -File)
+          $downloads = @(Get-ChildItem work/artifact-roundtrip -File)
+          if ($originals.Count -eq 0 -or $originals.Count -ne $downloads.Count) { throw 'Transferred package file count does not match.' }
+          foreach ($file in $originals) {
+            $download = Join-Path work/artifact-roundtrip $file.Name
+            if (!(Test-Path -LiteralPath $download -PathType Leaf)) { throw "Missing transferred file: $($file.Name)" }
+            if ((Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash -ne (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash) {
+              throw "Transferred file checksum mismatch: $($file.Name)"
+            }
+            Write-Host "Verified SHA256: $($file.Name)"
+          }
 
   release:
     if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')))
