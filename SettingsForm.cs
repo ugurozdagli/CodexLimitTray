@@ -12,6 +12,7 @@ internal sealed class SettingsForm : Form
         var heading = new SmoothLabel { Text = L10n.Text("Ayarlar", "Settings") + " · v" + AppInfo.Version, Font = Palette.Font(14, FontStyle.Bold), ForeColor = Palette.Text };
         heading.SetBounds(24, 18, 470, 34); heading.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) WindowChrome.Drag(this); }; Controls.Add(heading);
         var close = new ModernButton { Text = "×", Size = new Size(32, 32), Location = new Point(514, 18), DialogResult = DialogResult.Cancel }; Controls.Add(close);
+        close.Click += (_, _) => Close();
         close.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         var body = new Panel { Location = new Point(0, 64), Size = new Size(570, 524), Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right, AutoScroll = true };
         var layout = new TableLayoutPanel { Dock = DockStyle.Top, Padding = new Padding(24, 0, 24, 0), AutoSize = true, ColumnCount = 2 };
@@ -51,6 +52,7 @@ internal sealed class SettingsForm : Form
         var footer = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 62, FlowDirection = FlowDirection.RightToLeft, Padding = new Padding(12, 8, 12, 8) };
         var save = new ModernButton { Text = L10n.Text("Kaydet", "Save"), Primary = true, Size = new Size(100, 36) };
         var cancel = new ModernButton { Text = L10n.Text("İptal", "Cancel"), Size = new Size(100, 36), DialogResult = DialogResult.Cancel };
+        cancel.Click += (_, _) => Close();
         var update = new ModernButton { Text = L10n.Text("Güncellemeleri kontrol et", "Check for updates"), Size = new Size(200, 36) };
         update.Click += (_, _) => checkUpdates();
         save.Click += (_, _) =>
