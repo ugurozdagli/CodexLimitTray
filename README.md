@@ -6,6 +6,8 @@
 
 ### For Codex addicts. Just one more prompt.
 
+*Your quota, explained. Your next prompt, hopefully.*
+
 Your remaining Codex limits, quietly living in the Windows taskbar.
 
 ![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square)
