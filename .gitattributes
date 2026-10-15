@@ -1,0 +1,12 @@
+* text=auto
+*.cs text eol=lf
+*.csproj text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.svg text eol=lf
+*.png binary
+*.ico binary
+work/ export-ignore
+dist/ export-ignore
+release/ export-ignore

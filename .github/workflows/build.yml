@@ -1,0 +1,86 @@
+name: Build, check, and package
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build self-contained Windows app
+        shell: pwsh
+        run: ./build.ps1 -SelfContained
+      - name: Run offline checks
+        shell: pwsh
+        run: |
+          $check = Start-Process ./release/CodexLimitTray.exe -ArgumentList '--self-test', 'checks.json' -Wait -PassThru
+          if ($check.ExitCode -ne 0) { throw 'Offline checks failed.' }
+          Get-Content checks.json
+      - name: Create clean distribution
+        shell: pwsh
+        run: ./package.ps1
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-x64
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || (github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')))
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: windows-x64
+          path: dist
+      - name: Attest the portable EXE and ZIP
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: |
+            dist/*.exe
+            dist/*.zip
+      - name: Publish tagged release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_REF: ${{ github.ref }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          [xml]$project = Get-Content CodexLimitTray.csproj -Raw
+          $expectedTag = 'v' + $project.Project.PropertyGroup[0].Version
+          $releaseTag = if ($env:BUILD_REF.StartsWith('refs/tags/')) { $env:BUILD_REF.Substring(10) } else { $expectedTag }
+          if ($releaseTag -ne $expectedTag) { throw 'Tag and project version do not match.' }
+          gh release create $releaseTag (Get-ChildItem dist -File).FullName --target $env:COMMIT_SHA --title "CodexLimitTray $releaseTag" --notes-file RELEASE_NOTES.md

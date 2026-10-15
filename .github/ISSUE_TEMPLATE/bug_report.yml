@@ -1,0 +1,38 @@
+name: Bug report
+description: Report a reproducible CLT problem without private data.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Please remove account information, tokens, and personal paths. Report vulnerabilities privately using SECURITY.md."
+  - type: input
+    id: version
+    attributes:
+      label: CLT version
+      placeholder: v1.2.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows version, display scaling, and Codex version
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the selected Simple/Detailed view and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or additional context
+      description: Demo data is preferred. Do not upload auth.json or raw Codex files.

@@ -1,0 +1,21 @@
+bin/
+obj/
+release/
+dist/
+work/
+*.user
+*.error.txt
+# Local shortcuts and per-user data must never enter source distributions.
+*.lnk
+.env
+.env.*
+!.env.example
+.codex/
+auth.json
+settings.json
+diagnostics.json
+*-results.json
+checks.json
+*.pfx
+*.p12
+*.key
