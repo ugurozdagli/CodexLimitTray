@@ -14,8 +14,8 @@
  <text x="64" y="202" fill="#f3f7fb" font-size="56" font-weight="700">Your quota.</text>
  <text x="64" y="270" fill="url(#accent)" font-size="56" font-weight="700">At a glance.</text>
  <text x="67" y="323" fill="#a4b4c7" font-size="21">For Codex addicts. Just one more prompt.</text>
- <rect x="65" y="369" width="183" height="31" rx="15" fill="#1b2c36"/>
- <text x="84" y="390" fill="#9fe9cf" font-size="14">WINDOWS · OPEN SOURCE</text>
+ <rect x="65" y="369" width="238" height="31" rx="15" fill="#1b2c36"/>
+ <text x="184" y="390" text-anchor="middle" fill="#9fe9cf" font-size="14">WINDOWS · OPEN SOURCE</text>
  <rect x="735" y="125" width="468" height="238" rx="24" fill="#182430" stroke="#304354"/>
  <text x="764" y="165" fill="#9bafc2" font-size="13" letter-spacing="2">LESS CHECKING. MORE BUILDING.</text>
  <line x1="764" x2="1175" y1="187" y2="187" stroke="#304354"/>
