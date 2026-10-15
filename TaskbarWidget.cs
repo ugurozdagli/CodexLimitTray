@@ -33,7 +33,7 @@ internal sealed class TaskbarWidget : Form
     public TaskbarWidget(Settings settings, ContextMenuStrip menu, Action click, Action save)
     {
         this.settings = settings; this.click = click; this.save = save;
-        Text = "CLT · Görev çubuğu göstergesi";
+        Text = L10n.T("CLT · Görev çubuğu göstergesi");
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true;
         AutoScaleMode = AutoScaleMode.None; StartPosition = FormStartPosition.Manual;
         ClientSize = LogicalSize; ContextMenuStrip = menu;
@@ -72,7 +72,7 @@ internal sealed class TaskbarWidget : Form
     public void SetState(UsageSnapshot? data, bool isFresh)
     {
         snapshot = data; fresh = isFresh;
-        tooltip.SetToolTip(this, !fresh ? "CLT · Güncel kullanım verisi bekleniyor" : $"CLT · Kalan kullanım\n{data!.Main.Primary?.Duration}: %{data.Main.Primary?.Remaining}\n{data.Main.Secondary?.Duration}: %{data.Main.Secondary?.Remaining}\nSol tık: ayrıntılar · Sağ tık: ayarlar");
+        tooltip.SetToolTip(this, !fresh ? L10n.T("CLT · Güncel kullanım verisi bekleniyor") : L10n.T("CLT · Kalan kullanım\n{0}: {1}\n{2}: {3}\nSol tık: ayrıntılar · Sağ tık: ayarlar", data!.Main.Primary?.Duration, data.Main.Primary is { } p ? L10n.Percent(p.Remaining) : "—", data.Main.Secondary?.Duration, data.Main.Secondary is { } s ? L10n.Percent(s.Remaining) : "—"));
         UpdatePosition(); Render();
     }
     public void ResetPosition() { settings.WidgetGap = 8; save(); UpdatePosition(); }
@@ -153,8 +153,8 @@ internal sealed class TaskbarWidget : Form
         for (var i = 0; i < 2; i++)
         {
             var window = windows[i];
-            var label = detailed ? window?.Duration ?? (i == 0 ? "Kısa" : "Haftalık") : i == 0 ? (window?.Minutes == 300 ? "5s" : "Ks") : "Hf";
-            var value = fresh && window is not null ? $"%{window.Remaining}" : "—";
+            var label = detailed ? window?.Duration ?? (i == 0 ? L10n.T("Kısa") : L10n.T("Haftalık")) : i == 0 ? (window?.Minutes == 300 ? L10n.T("5s") : L10n.T("Ks")) : L10n.T("Hf");
+            var value = fresh && window is not null ? L10n.Percent(window.Remaining) : "—";
             var row = new RectangleF(3 * scale, i * size.Height / 2f, (detailed ? 47 : 21) * scale, size.Height / 2f);
             g.DrawString(label, font, labelBrush, row, format);
             using var valueBrush = new SolidBrush(fresh && window is not null ? Palette.For(window.Remaining) : Palette.Muted);

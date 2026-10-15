@@ -24,6 +24,9 @@ internal static class Diagnostics
         var output = args.Length > 1 ? Path.GetFullPath(args[1]) : Path.Combine(AppContext.BaseDirectory, "diagnostics.json");
         try
         {
+            // Diagnostics can render either language without changing Windows settings.
+            if (args.Length > 2 && args[2] is "en-US" or "tr-TR")
+                System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(args[2]);
             if (args[0] == "--demo-previews")
             {
                 Directory.CreateDirectory(output);
@@ -81,7 +84,7 @@ internal static class Diagnostics
             }
             else if (args[0] == "--taskbar-info")
             {
-                var info = TaskbarWidget.GetTaskbarInfo() ?? throw new Exception("Windows görev çubuğu bulunamadı.");
+                var info = TaskbarWidget.GetTaskbarInfo() ?? throw new Exception(L10n.T("Windows görev çubuğu bulunamadı."));
                 File.WriteAllText(output, JsonSerializer.Serialize(new { taskbar = info.Taskbar, anchor = info.Anchor, dpi = info.Dpi }, new JsonSerializerOptions { WriteIndented = true }));
             }
             else if (args[0] is "--diagnose" or "--preview" or "--widget-preview" or "--widget-detailed-preview")
@@ -97,7 +100,7 @@ internal static class Diagnostics
                     g.DrawImageUnscaled(bitmap, 18, 18);
                     using var font = new Font("Segoe UI", 12, FontStyle.Regular, GraphicsUnit.Pixel);
                     using var brush = new SolidBrush(Palette.Muted);
-                    g.DrawString(detailed ? "CLT · Detaylı" : "CLT · Basit", font, brush, detailed ? 250 : 127, 28);
+                    g.DrawString(detailed ? L10n.T("CLT · Detaylı") : L10n.T("CLT · Basit"), font, brush, detailed ? 250 : 127, 28);
                     canvas.Save(output, System.Drawing.Imaging.ImageFormat.Png);
                 }
                 else if (args[0] == "--preview")
@@ -117,7 +120,7 @@ internal static class Diagnostics
                     File.WriteAllText(output, JsonSerializer.Serialize(new { ok = true, fetchedAt = data.FetchedAt, buckets = data.Buckets.Select(b => new { name = b.Name, primaryRemaining = b.Primary?.Remaining, secondaryRemaining = b.Secondary?.Remaining, primaryReset = b.Primary?.ResetText, secondaryReset = b.Secondary?.ResetText }) }, new JsonSerializerOptions { WriteIndented = true }));
                 }
             }
-            else throw new ArgumentException("Desteklenen seçenekler: --self-test, --diagnose, --preview; ardından çıktı dosyası.");
+            else throw new ArgumentException(L10n.T("Desteklenen seçenekler: --self-test, --diagnose, --preview; ardından çıktı dosyası."));
             return 0;
         }
         catch (Exception ex)
@@ -134,10 +137,10 @@ internal static class Diagnostics
         UsageSnapshot Parse(string json) { using var doc = JsonDocument.Parse(json); return UsageSnapshot.Parse(doc.RootElement); }
         var live = Parse("""{"rateLimitsByLimitId":{"codex":{"primary":{"usedPercent":83,"windowDurationMins":300,"resetsAt":1792071126},"secondary":{"usedPercent":13,"windowDurationMins":10080,"resetsAt":1792657926},"planType":"plus"}}}""");
         Check("Used percentage is converted to remaining", live.Main.Primary!.Remaining == 17 && live.Main.Secondary!.Remaining == 87);
-        Check("Window durations are read from server", live.Main.Primary.Duration == "5 saatlik" && live.Main.Secondary!.Duration == "Haftalık");
+        Check("Window durations are read from server", live.Main.Primary.Duration == L10n.T("5 saatlik") && live.Main.Secondary!.Duration == L10n.T("Haftalık"));
         var legacy = Parse("""{"rateLimits":{"primary":{"usedPercent":24.1,"windowDurationMins":60},"secondary":null}}""");
         Check("Legacy payload and fractional usage", legacy.Main.Primary!.Remaining == 75 && legacy.Main.Secondary is null);
-        Check("Missing reset does not invent a date", legacy.Main.Primary!.ResetText == "Bilinmiyor");
+        Check("Missing reset does not invent a date", legacy.Main.Primary!.ResetText == L10n.T("Bilinmiyor"));
         var nullable = Parse("""{"rateLimits":{"primary":{"usedPercent":12,"windowDurationMins":null,"resetsAt":null}}}""");
         Check("Explicit null metadata is tolerated", nullable.Main.Primary!.Resets is null && nullable.Main.Primary.Remaining == 88);
         var multi = Parse("""{"rateLimitsByLimitId":{"extra":{"limitName":"Other","primary":{"usedPercent":-2,"windowDurationMins":15}},"codex":{"secondary":{"usedPercent":130,"windowDurationMins":10080}}}}""");
@@ -152,8 +155,8 @@ internal static class Diagnostics
         try { Parse("""{"rateLimits":{"primary":{"usedPercent":"unknown"}}}"""); } catch (InvalidOperationException) { invalid = true; }
         Check("Malformed percentages rejected", invalid);
         var now = DateTimeOffset.Now;
-        Check("Expired reset waits for server confirmation", new UsageWindow(100, 300, now.AddSeconds(-1)).Countdown(now) == "Yenilenme bekleniyor");
-        Check("Countdown rounds partial minutes up", new UsageWindow(0, 300, now.AddSeconds(10)).Countdown(now).StartsWith("1 dk"));
+        Check("Expired reset waits for server confirmation", new UsageWindow(100, 300, now.AddSeconds(-1)).Countdown(now) == L10n.T("Yenilenme bekleniyor"));
+        Check("Countdown rounds partial minutes up", new UsageWindow(0, 300, now.AddSeconds(10)).Countdown(now) == L10n.T("{0} dk sonra yenilenir", 1));
         var screen = new Rectangle(0, 0, 2560, 1440);
         Check("True full-screen content may hide widget", TaskbarWidget.CoversScreen(screen, screen, false, false));
         Check("Maximized apps keep widget visible", !TaskbarWidget.CoversScreen(screen, screen, true, false));
@@ -176,6 +179,31 @@ internal static class Diagnostics
                 for (var x = 0; x < bitmap.Width; x++) for (var y = row * bitmap.Height / 2; y < (row + 1) * bitmap.Height / 2; y++) if (bitmap.GetPixel(x, y).A > 128) painted++;
                 Check($"Widget row {row + 1} contains visible text", painted > 70);
             }
+        }
+        var originalUi = System.Globalization.CultureInfo.CurrentUICulture;
+        var originalRegion = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            // Deliberately mismatch region and display language to catch accidental regional detection.
+            System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("tr-TR");
+            foreach (var language in new[] { "tr-TR", "en-US", "en-GB", "de-DE" })
+            {
+                System.Globalization.CultureInfo.CurrentUICulture = System.Globalization.CultureInfo.GetCultureInfo(language);
+                var turkish = language == "tr-TR";
+                Check($"{language}: display language and fallback", L10n.IsTurkish == turkish && L10n.T("Şimdi yenile") == (turkish ? "Şimdi yenile" : "Refresh now"));
+                Check($"{language}: percentage placement", L10n.Percent(72) == (turkish ? "%72" : "72%"));
+                Check($"{language}: durations", new UsageWindow(0, 90, null).Duration == (turkish ? "1,5 saatlik" : "1.5-hour"));
+                Check($"{language}: countdown", new UsageWindow(0, 300, now.AddHours(2).AddMinutes(15)).Countdown(now) == (turkish ? "2 sa 15 dk sonra yenilenir" : "Resets in 2h 15m"));
+                Check($"{language}: reset month", new UsageWindow(0, 300, new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero)).ResetText.Contains(turkish ? "Eki" : "Oct"));
+                using var popup = new Popup(() => { }, () => { }, () => { });
+                popup.SetState(live, null, false, false, true);
+                Check($"{language}: popup controls", popup.Controls.OfType<Panel>().SelectMany(p => p.Controls.OfType<Button>()).Any(b => b.Text == (turkish ? "Şimdi yenile" : "Refresh now")));
+            }
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentUICulture = originalUi;
+            System.Globalization.CultureInfo.CurrentCulture = originalRegion;
         }
         return passed;
     }

@@ -57,7 +57,7 @@ internal sealed class ModernToggle : CheckBox
 {
     public ModernToggle()
     {
-        Text = "Windows ile başlat"; AutoSize = false; Cursor = Cursors.Hand;
+        Text = L10n.T("Windows ile başlat"); AutoSize = false; Cursor = Cursors.Hand;
         SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
     }
     protected override void OnPaint(PaintEventArgs e)

@@ -66,7 +66,7 @@ internal sealed class TrayApp : ApplicationContext
     private readonly CancellationTokenSource shutdown = new();
     private readonly Settings settings = Settings.Load();
     private readonly ContextMenuStrip menu = new();
-    private readonly ToolStripMenuItem shortMode = new("Kısa dönem kalan %"), weeklyMode = new("Haftalık kalan %"), startupItem = new("Windows ile başlat");
+    private readonly ToolStripMenuItem shortMode = new(L10n.T("Kısa dönem kalan %")), weeklyMode = new(L10n.T("Haftalık kalan %")), startupItem = new(L10n.T("Windows ile başlat"));
     private UsageSnapshot? snapshot;
     private string? error;
     private bool busy, exiting;
@@ -84,20 +84,20 @@ internal sealed class TrayApp : ApplicationContext
         _ = dispatcher.Handle;
         wait = ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => { try { dispatcher.BeginInvoke(() => ShowPopup()); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
         menu.Items.Add("CLT · CodexLimitTray", null, (_, _) => ShowPopup());
-        menu.Items.Add("Şimdi yenile", null, async (_, _) => await RefreshAsync());
-        var widgetItem = new ToolStripMenuItem("Görev çubuğunda iki satır");
-        var lockItem = new ToolStripMenuItem("Gösterge konumunu kilitle");
+        menu.Items.Add(L10n.T("Şimdi yenile"), null, async (_, _) => await RefreshAsync());
+        var widgetItem = new ToolStripMenuItem(L10n.T("Görev çubuğunda iki satır"));
+        var lockItem = new ToolStripMenuItem(L10n.T("Gösterge konumunu kilitle"));
         widgetItem.Click += (_, _) => { settings.WidgetEnabled = !settings.WidgetEnabled; SaveSettings(); widget?.SetState(snapshot, Fresh); };
         lockItem.Click += (_, _) => { settings.WidgetLocked = !settings.WidgetLocked; SaveSettings(); };
         menu.Items.Add(widgetItem); menu.Items.Add(lockItem);
-        var appearance = new ToolStripMenuItem("Görünüm");
-        var simpleView = new ToolStripMenuItem("Basit");
-        var detailedView = new ToolStripMenuItem("Detaylı");
+        var appearance = new ToolStripMenuItem(L10n.T("Görünüm"));
+        var simpleView = new ToolStripMenuItem(L10n.T("Basit"));
+        var detailedView = new ToolStripMenuItem(L10n.T("Detaylı"));
         simpleView.Click += (_, _) => { settings.WidgetDetailed = false; SaveSettings(); UpdateTray(); };
         detailedView.Click += (_, _) => { settings.WidgetDetailed = true; SaveSettings(); UpdateTray(); };
         appearance.DropDownItems.AddRange([simpleView, detailedView]);
         menu.Items.Add(appearance);
-        menu.Items.Add("Gösterge konumunu sıfırla", null, (_, _) => widget?.ResetPosition());
+        menu.Items.Add(L10n.T("Gösterge konumunu sıfırla"), null, (_, _) => widget?.ResetPosition());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(shortMode); menu.Items.Add(weeklyMode);
         shortMode.Click += (_, _) => ChangeMode(false);
@@ -105,9 +105,9 @@ internal sealed class TrayApp : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(startupItem);
         startupItem.Click += (_, _) => ToggleStartup();
-        menu.Items.Add("Tray görünürlük ayarları", null, (_, _) => OpenTraySettings());
+        menu.Items.Add(L10n.T("Tray görünürlük ayarları"), null, (_, _) => OpenTraySettings());
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Çıkış", null, (_, _) => ExitThread());
+        menu.Items.Add(L10n.T("Çıkış"), null, (_, _) => ExitThread());
         menu.Opening += (_, _) => { startupItem.Checked = Startup.Enabled; shortMode.Checked = !settings.Weekly; weeklyMode.Checked = settings.Weekly; widgetItem.Checked = settings.WidgetEnabled; lockItem.Checked = settings.WidgetLocked; simpleView.Checked = !settings.WidgetDetailed; detailedView.Checked = settings.WidgetDetailed; };
         tray.ContextMenuStrip = menu;
         tray.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) { if (popup?.Visible == true) popup.Hide(); else ShowPopup(); } };
@@ -126,18 +126,18 @@ internal sealed class TrayApp : ApplicationContext
     }
     private void SaveSettings()
     {
-        try { settings.Save(); } catch { tray.ShowBalloonTip(4000, "CLT", "Görünüm tercihi kaydedilemedi.", ToolTipIcon.Warning); }
+        try { settings.Save(); } catch { tray.ShowBalloonTip(4000, "CLT", L10n.T("Görünüm tercihi kaydedilemedi."), ToolTipIcon.Warning); }
     }
     private void ToggleStartup()
     {
         try { Startup.Set(!Startup.Enabled); }
-        catch { MessageBox.Show("Windows başlangıç ayarı kaydedilemedi.", "CodexLimitTray", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch { MessageBox.Show(L10n.T("Windows başlangıç ayarı kaydedilemedi."), "CodexLimitTray", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         UpdatePopup();
     }
     internal static void OpenTraySettings()
     {
         try { Process.Start(new ProcessStartInfo("ms-settings:taskbar") { UseShellExecute = true }); }
-        catch { MessageBox.Show("Görev çubuğuna sağ tıkla → Görev çubuğu ayarları → Diğer sistem tepsisi simgeleri.", "CLT"); }
+        catch { MessageBox.Show(L10n.T("Görev çubuğuna sağ tıkla → Görev çubuğu ayarları → Diğer sistem tepsisi simgeleri."), "CLT"); }
     }
     private async Task RefreshAsync()
     {
@@ -145,7 +145,7 @@ internal sealed class TrayApp : ApplicationContext
         busy = true; UpdatePopup();
         try { snapshot = await CodexClient.FetchAsync(shutdown.Token); error = null; }
         catch (OperationCanceledException) when (exiting) { }
-        catch (Exception ex) { error = ex is TimeoutException or InvalidOperationException or FileNotFoundException or IOException ? ex.Message : "Kullanım verisi alınamadı. Codex oturumunu kontrol edip tekrar dene."; }
+        catch (Exception ex) { error = ex is TimeoutException or InvalidOperationException or FileNotFoundException or IOException ? ex.Message : L10n.T("Kullanım verisi alınamadı. Codex oturumunu kontrol edip tekrar dene."); }
         finally { busy = false; if (!exiting) { UpdateTray(); UpdatePopup(); } }
     }
     private bool Fresh => error is null && snapshot is not null && DateTimeOffset.Now - snapshot.FetchedAt < TimeSpan.FromMinutes(3);
@@ -155,12 +155,12 @@ internal sealed class TrayApp : ApplicationContext
         var icon = TrayDrawing.Create(Fresh ? window?.Remaining : null);
         tray.Icon = icon;
         currentIcon?.Dispose(); currentIcon = icon;
-        var lines = new List<string> { "CLT · Codex kalan kullanım" };
-        if (!Fresh) lines.Add(error is null ? "Veri bekleniyor…" : "Güncel veri alınamadı; tıkla");
+        var lines = new List<string> { L10n.T("CLT · Codex kalan kullanım") };
+        if (!Fresh) lines.Add(error is null ? L10n.T("Veri bekleniyor…") : L10n.T("Güncel veri alınamadı; tıkla"));
         else
         {
             foreach (var w in new[] { snapshot!.Main.Primary, snapshot.Main.Secondary }.OfType<UsageWindow>())
-                lines.Add($"{w.Duration}: %{w.Remaining} · {w.ResetText}");
+                lines.Add($"{w.Duration}: {L10n.Percent(w.Remaining)} · {w.ResetText}");
         }
         var text = string.Join('\n', lines);
         tray.Text = text.Length > 127 ? text[..127] : text;

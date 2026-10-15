@@ -11,7 +11,7 @@ Your remaining Codex limits, quietly living in the Windows taskbar.
 ![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square)
 ![.NET 10 LTS](https://img.shields.io/badge/.NET-10_LTS-512BD4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/license-MIT-5fe7b9?style=flat-square)
-![Turkish interface](https://img.shields.io/badge/interface-T%C3%BCrk%C3%A7e-e18b50?style=flat-square)
+![English and Turkish interface](https://img.shields.io/badge/interface-English%20%2B%20T%C3%BCrk%C3%A7e-e18b50?style=flat-square)
 
 [Download portable EXE](https://github.com/ugurozdagli/CodexLimitTray/releases/latest) · [Screenshots](#screenshots) · [How it works](#how-it-works) · [Privacy](PRIVACY.md) · [Türkçe](docs/README.tr.md)
 
@@ -29,7 +29,7 @@ No extra API key. No CLT account. No dashboard to keep open. Use the Codex accou
 
 ## Screenshots
 
-These previews are rendered by the application using **fictional demo data**. They do not show the maintainer's account. The interface currently speaks **Turkish**; this README is in English.
+These previews are rendered by the application using **fictional demo data**. They do not show the maintainer's account. The screenshots show the Turkish interface. CLT automatically uses **Turkish on Turkish Windows display languages and English on all other display languages**. Restart CLT after changing the Windows display language.
 
 ### At a glance
 
@@ -57,12 +57,12 @@ These previews are rendered by the application using **fictional demo data**. Th
 | Move & lock | Drag horizontally, lock the position, or reset it from the context menu. |
 | Optional startup | Start with Windows if you choose. Off by default. |
 | Tray fallback | A small percentage icon provides another way to open the panel and settings. |
-| Turkish support | Native Turkish labels and local reset times. |
+| English & Turkish | Automatically follows the Windows display language; English is the fallback. Includes menus, errors, countdowns, and localized reset dates. |
 
 ## Download & run
 
 1. Open the [latest release](https://github.com/ugurozdagli/CodexLimitTray/releases/latest).
-2. Download **`CodexLimitTray-v1.2.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
+2. Download **`CodexLimitTray-v1.3.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
 3. Save the EXE in a permanent folder and run it. For the ZIP, extract first and run **`CodexLimitTray.exe`**.
 4. Make sure Codex is installed and signed in with your own ChatGPT account.
 
@@ -154,7 +154,7 @@ Additional `--smoke-test`, `--smoke-test-error`, `--diagnose`, and live `--previ
 
 ## Contributing
 
-Bug reports, small fixes, accessibility improvements, and localization work are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). English UI localization is a useful future contribution; **English UI is not implemented yet**.
+Bug reports, small fixes, accessibility improvements, and localization work are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md). English and Turkish UI translations live in `L10n.cs`.
 
 Please use private reporting for security issues, and remove personal information from screenshots and logs. See [SECURITY.md](SECURITY.md).
 

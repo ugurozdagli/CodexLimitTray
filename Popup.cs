@@ -10,7 +10,7 @@ internal sealed class Popup : Form
     private readonly Button refresh, mode;
     private readonly ModernToggle startup = new() { BackColor = Palette.Background };
     private bool settingStartup;
-    private string subtitle = "Codex oturumuna bağlanıyor";
+    private string subtitle = L10n.T("Codex oturumuna bağlanıyor");
     private bool live;
     private string contentKey = "";
     public Popup(Action refreshAction, Action startupAction, Action modeAction)
@@ -28,8 +28,8 @@ internal sealed class Popup : Form
         Controls.Add(close);
         Controls.Add(cards);
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 164, BackColor = Palette.Background };
-        refresh = MakeButton("Şimdi yenile", refreshAction);
-        mode = MakeButton("Tray: 5 saatlik", modeAction);
+        refresh = MakeButton(L10n.T("Şimdi yenile"), refreshAction);
+        mode = MakeButton(L10n.T("Tray: 5 saatlik"), modeAction);
         ((ModernButton)refresh).Primary = true;
         refresh.SetBounds(24, 10, 178, 40); mode.SetBounds(212, 10, 184, 40);
         startup.SetBounds(25, 61, 370, 35);
@@ -64,11 +64,11 @@ internal sealed class Popup : Form
     public void SetState(UsageSnapshot? snapshot, string? error, bool busy, bool weekly, bool fresh)
     {
         live = fresh;
-        subtitle = snapshot is null ? "Kalan kullanım hakkın" : $"Kalan kullanım hakkın  ·  {snapshot.Main.Plan?.ToUpperInvariant() ?? "CODEX"}";
-        refresh.Enabled = !busy; refresh.Text = busy ? "Yenileniyor…" : "Şimdi yenile";
-        mode.Text = weekly ? "Tray: haftalık" : "Tray: kısa dönem";
+        subtitle = snapshot is null ? L10n.T("Kalan kullanım hakkın") : $"{L10n.T("Kalan kullanım hakkın")}  ·  {snapshot.Main.Plan?.ToUpperInvariant() ?? "CODEX"}";
+        refresh.Enabled = !busy; refresh.Text = busy ? L10n.T("Yenileniyor…") : L10n.T("Şimdi yenile");
+        mode.Text = weekly ? L10n.T("Tray: haftalık") : L10n.T("Tray: kısa dönem");
         settingStartup = true; startup.Checked = Startup.Enabled; settingStartup = false;
-        status.Text = error is not null ? error : snapshot is null ? "Codex'ten kullanım verisi alınıyor…" : $"{(fresh ? "Güncel" : "Eski veri")} · Son kontrol {snapshot.FetchedAt:HH:mm:ss}\n60 saniyede bir otomatik yenilenir.";
+        status.Text = error is not null ? error : snapshot is null ? L10n.T("Codex'ten kullanım verisi alınıyor…") : L10n.T("{0} · Son kontrol {1:HH:mm:ss}\n60 saniyede bir otomatik yenilenir.", fresh ? L10n.T("Güncel") : L10n.T("Eski veri"), snapshot.FetchedAt);
         status.ForeColor = error is not null ? Palette.For(0) : Palette.Muted;
         var key = $"{snapshot?.FetchedAt.Ticks}:{fresh}:{DateTimeOffset.Now.ToUnixTimeSeconds() / 30}";
         if (contentKey != key)
@@ -81,7 +81,7 @@ internal sealed class Popup : Form
                     foreach (var w in new[] { bucket.Primary, bucket.Secondary }.OfType<UsageWindow>())
                         cards.Controls.Add(new WindowCard(w, bucket.Id == "codex" ? null : bucket.Name, fresh));
             else
-                cards.Controls.Add(new Label { Text = "CLT\n\nKullanım bilgilerin burada görünecek.\nCodex oturumun açık olmalı.", Size = new Size(368, 230), TextAlign = ContentAlignment.MiddleCenter, ForeColor = Palette.Muted, BackColor = Palette.Card });
+                cards.Controls.Add(new Label { Text = L10n.T("CLT\n\nKullanım bilgilerin burada görünecek.\nCodex oturumun açık olmalı."), Size = new Size(368, 230), TextAlign = ContentAlignment.MiddleCenter, ForeColor = Palette.Muted, BackColor = Palette.Card });
             cards.ResumeLayout();
         }
         Invalidate();
@@ -98,7 +98,7 @@ internal sealed class Popup : Form
         using var sub = Palette.Font(8.75f);
         using var text = new SolidBrush(Palette.Text); using var muted = new SolidBrush(Palette.Muted);
         g.DrawString("CodexLimitTray", title, text, 74, 22);
-        g.DrawString("Kalan kullanım hakkın", sub, muted, 75, 47);
+        g.DrawString(L10n.T("Kalan kullanım hakkın"), sub, muted, 75, 47);
         var plan = subtitle.Contains('·') ? subtitle.Split('·')[^1].Trim() : "CODEX";
         using var planFont = Palette.Font(8, FontStyle.Bold);
         var planWidth = Math.Max(43, g.MeasureString(plan, planFont).Width + 20);
@@ -108,7 +108,7 @@ internal sealed class Popup : Form
         g.DrawString(plan, planFont, muted, new RectangleF(24, 77, planWidth, 20), centered);
         using var dot = new SolidBrush(live ? Palette.Mint : Palette.Muted);
         g.FillEllipse(dot, 312, 83, 6, 6);
-        g.DrawString(live ? "Güncel" : "Bekleniyor", sub, muted, 323, 77);
+        g.DrawString(live ? L10n.T("Güncel") : L10n.T("Bekleniyor"), sub, muted, 323, 77);
     }
     protected override void Dispose(bool disposing) { if (disposing) { Icon?.Dispose(); Font.Dispose(); } base.Dispose(disposing); }
 }
@@ -123,7 +123,7 @@ internal sealed class WindowCard : Control
         this.window = window; this.bucketName = bucketName; this.fresh = fresh;
         Size = new Size(372, bucketName is null ? 156 : 174); Margin = new Padding(0, 0, 0, 12);
         DoubleBuffered = true; BackColor = Palette.Background;
-        AccessibleName = $"{bucketName} {window.Duration} yüzde {window.Remaining} kaldı. Yenilenme {window.ResetText}";
+        AccessibleName = L10n.T("{0} {1} yüzde {2} kaldı. Yenilenme {3}", bucketName, window.Duration, window.Remaining, window.ResetText);
     }
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -141,8 +141,8 @@ internal sealed class WindowCard : Control
         using var badge = ModernShape.Round(new RectangleF(291, y, 62, 22), 11);
         using var tint = new SolidBrush(Color.FromArgb(25, color)); g.FillPath(tint, badge);
         using var centered = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString(fresh ? "kalan" : "eski veri", small, accent, new RectangleF(291, y, 62, 22), centered);
-        g.DrawString($"%{window.Remaining}", big, accent, 14, y + 20);
+        g.DrawString(fresh ? L10n.T("kalan") : L10n.T("eski veri"), small, accent, new RectangleF(291, y, 62, 22), centered);
+        g.DrawString(L10n.Percent(window.Remaining), big, accent, 14, y + 20);
         var bar = new RectangleF(18, y + 79, Width - 36, 6);
         using var track = new SolidBrush(Color.FromArgb(48, 62, 80));
         using var trackPath = ModernShape.Round(bar, 3); g.FillPath(track, trackPath);
@@ -152,6 +152,6 @@ internal sealed class WindowCard : Control
             g.FillPath(accent, progress);
         }
         g.DrawString(window.Countdown(DateTimeOffset.Now), small, text, 18, y + 96);
-        g.DrawString($"Yenilenme  ·  {window.ResetText}", small, muted, 18, y + 117);
+        g.DrawString(L10n.T("Yenilenme  ·  {0}", window.ResetText), small, muted, 18, y + 117);
     }
 }

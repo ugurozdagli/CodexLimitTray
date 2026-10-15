@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — Automatic English and Turkish interface
+
+- Follow the Windows display language: Turkish for Turkish, English for other languages.
+- Translate the usage panel, context menu, tooltips, errors, and accessibility labels.
+- Localize percentage placement, taskbar abbreviations, countdowns, and reset month names.
+- Add display-language tests independent of regional settings, including English fallback.
+- Update GitHub Actions dependencies and verify uploaded/downloaded package checksums.
+
 ## 1.2.0 — Initial public release
 
 - Simple and Detailed two-line taskbar views with remaining usage and reset dates.

@@ -1,6 +1,8 @@
 # CodexLimitTray · CLT
 
-Windows görev çubuğunda Codex aboneliğinin **kalan** kullanım yüzdeleri. NetSpeedTray tarzında iki satır (`5s %12` / `Hf %86`), Türkçe arayüz, 60 saniyede bir yenileme ve ayrıntılı panel.
+Windows görev çubuğunda Codex aboneliğinin **kalan** kullanım yüzdeleri. NetSpeedTray tarzında iki satır (`5s %12` / `Hf %86`), Türkçe ve İngilizce arayüz, 60 saniyede bir yenileme ve ayrıntılı panel.
+
+Arayüz dili Windows'un görüntüleme diline göre otomatik seçilir: Türkçe Windows'ta Türkçe, İngilizce ve diğer dillerde İngilizce. Bölge ayarı dil seçimini değiştirmez. Windows dilini değiştirirsen CLT'yi yeniden başlat.
 
 ## Çalıştırma
 

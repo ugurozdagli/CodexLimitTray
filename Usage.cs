@@ -5,14 +5,14 @@ namespace CodexLimitTray;
 internal sealed record UsageWindow(double Used, int Minutes, DateTimeOffset? Resets)
 {
     public int Remaining => (int)Math.Floor(Math.Clamp(100 - Used, 0, 100));
-    public string Duration => Minutes == 10080 ? "Haftalık" : Minutes == 300 ? "5 saatlik" : Minutes >= 1440 ? $"{Minutes / 1440} günlük" : Minutes >= 60 ? $"{Minutes / 60.0:0.#} saatlik" : $"{Minutes} dakikalık";
-    public string ResetText => Resets is { } reset ? reset.ToLocalTime().ToString("dd MMM HH:mm", System.Globalization.CultureInfo.GetCultureInfo("tr-TR")) : "Bilinmiyor";
+    public string Duration => Minutes == 10080 ? L10n.T("Haftalık") : Minutes == 300 ? L10n.T("5 saatlik") : Minutes >= 1440 ? L10n.T("{0} günlük", Minutes / 1440) : Minutes >= 60 ? L10n.T("{0} saatlik", (Minutes / 60.0).ToString("0.#", L10n.Culture)) : L10n.T("{0} dakikalık", Minutes);
+    public string ResetText => Resets is { } reset ? reset.ToLocalTime().ToString("dd MMM HH:mm", L10n.Culture) : L10n.T("Bilinmiyor");
     public string Countdown(DateTimeOffset now)
     {
-        if (Resets is not { } reset) return "Yenilenme saati bilinmiyor";
+        if (Resets is not { } reset) return L10n.T("Yenilenme saati bilinmiyor");
         var left = reset - now;
-        if (left <= TimeSpan.Zero) return "Yenilenme bekleniyor";
-        return left.TotalDays >= 1 ? $"{(int)left.TotalDays} gün {left.Hours} sa sonra yenilenir" : left.TotalHours >= 1 ? $"{(int)left.TotalHours} sa {left.Minutes} dk sonra yenilenir" : $"{Math.Max(1, (int)Math.Ceiling(left.TotalMinutes))} dk sonra yenilenir";
+        if (left <= TimeSpan.Zero) return L10n.T("Yenilenme bekleniyor");
+        return left.TotalDays >= 1 ? L10n.T("{0} gün {1} sa sonra yenilenir", (int)left.TotalDays, left.Hours) : left.TotalHours >= 1 ? L10n.T("{0} sa {1} dk sonra yenilenir", (int)left.TotalHours, left.Minutes) : L10n.T("{0} dk sonra yenilenir", Math.Max(1, (int)Math.Ceiling(left.TotalMinutes)));
     }
 }
 
@@ -26,7 +26,7 @@ internal sealed record UsageSnapshot(List<UsageBucket> Buckets, DateTimeOffset F
         if (root.TryGetProperty("rateLimitsByLimitId", out var map) && map.ValueKind == JsonValueKind.Object)
             foreach (var prop in map.EnumerateObject()) Add(prop.Value, prop.Name);
         if (buckets.Count == 0 && root.TryGetProperty("rateLimits", out var legacy) && legacy.ValueKind == JsonValueKind.Object) Add(legacy, "codex");
-        if (buckets.Count == 0) throw new InvalidOperationException("Bu hesap için kullanım limiti verisi dönmedi. Codex'e ChatGPT hesabınla giriş yaptığından emin ol.");
+        if (buckets.Count == 0) throw new InvalidOperationException(L10n.T("Bu hesap için kullanım limiti verisi dönmedi. Codex'e ChatGPT hesabınla giriş yaptığından emin ol."));
         return new(buckets, DateTimeOffset.Now);
 
         void Add(JsonElement value, string id)
