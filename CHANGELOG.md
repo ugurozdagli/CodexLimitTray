@@ -11,7 +11,7 @@
 - Fix unknown/non-weekly duration labels and collapse missing widget windows.
 - Preserve old preferences with atomic settings replacement and backup recovery.
 - Add manual update checks, failure backoff, resume refresh, and a short manual refresh cooldown.
-- Expand offline coverage to 114 checks, with live Codex/ownership and update-endpoint smoke checks.
+- Expand offline coverage to 116 checks, with live Codex/ownership and update-endpoint smoke checks.
 
 ## 1.3.0 — Automatic English and Turkish interface
 

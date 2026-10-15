@@ -92,6 +92,15 @@ internal static class FeatureTests
         check("Newer stable release is detected", UpdateChecker.NewerVersion("v1.5.0", "1.4.0") == new Version(1, 5, 0));
         check("Same/older/pre-release tags do not offer updates", UpdateChecker.NewerVersion("v1.4.0", "1.4.0") is null && UpdateChecker.NewerVersion("v1.3.0", "1.4.0") is null && UpdateChecker.NewerVersion("v2.0.0-beta", "1.4.0") is null);
         check("Malformed update tags cannot become download destinations", UpdateChecker.NewerVersion("https://example.invalid/file.exe", "1.4.0") is null);
+        foreach (var caption in new[] { "×", L10n.Text("İptal", "Cancel") })
+        {
+            using var options = new SettingsForm(new Settings(), () => { }, () => { });
+            var buttons = options.Controls.OfType<Button>().Concat(options.Controls.OfType<FlowLayoutPanel>().SelectMany(p => p.Controls.OfType<Button>()));
+            var button = buttons.Single(b => b.Text == caption);
+            // Exercise Button.OnClick without displaying a window or changing registry/settings.
+            typeof(Button).GetMethod("OnClick", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(button, [EventArgs.Empty]);
+            check("Modeless settings closes on " + caption, options.IsDisposed);
+        }
         var normalized = new Settings { WarningThreshold = 0, CriticalThreshold = 99, Theme = (ThemeMode)99, TextScale = float.NaN }.Normalize();
         check("Invalid preferences normalize safely", normalized.WarningThreshold == 2 && normalized.CriticalThreshold == 1 && normalized.Theme == ThemeMode.Dark && normalized.TextScale == 1);
         var directory = Path.Combine(Path.GetTempPath(), "CLT-settings-test-" + Guid.NewGuid().ToString("N"));

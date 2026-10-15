@@ -27,7 +27,7 @@ Windows 11 x64 and your own signed-in Codex installation are required. The .NET 
 
 ## Validation and privacy
 
-114 offline checks cover language, notification transitions, rendering, settings migration/recovery, update versions, and display fallback. Live Codex/taskbar ownership and the GitHub update endpoint were also checked. Documentation screenshots use fictional usage data.
+116 offline checks cover language, notification transitions, rendering, settings migration/recovery, modeless settings controls, update versions, and display fallback. Live Codex/taskbar ownership and the GitHub update endpoint were also checked. Documentation screenshots use fictional usage data.
 
 No account or token is bundled. A one-way account fingerprint is kept only in memory for safe notification comparisons. User-initiated update checks contact GitHub without sending quota/account data and do not download or execute updates.
 
