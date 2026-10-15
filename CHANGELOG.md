@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1 — Settings close controls
+
+- Fix the close and Cancel buttons on the modeless Settings window.
+- Add regression checks for both close paths; 116 offline checks now pass.
+
 ## 1.4.0 — Personalize your taskbar
 
 - Add a rounded bilingual Settings panel and a gear shortcut from the usage panel.
@@ -11,7 +16,7 @@
 - Fix unknown/non-weekly duration labels and collapse missing widget windows.
 - Preserve old preferences with atomic settings replacement and backup recovery.
 - Add manual update checks, failure backoff, resume refresh, and a short manual refresh cooldown.
-- Expand offline coverage to 116 checks, with live Codex/ownership and update-endpoint smoke checks.
+- Expand offline coverage to 114 checks, with live Codex/ownership and update-endpoint smoke checks.
 
 ## 1.3.0 — Automatic English and Turkish interface
 

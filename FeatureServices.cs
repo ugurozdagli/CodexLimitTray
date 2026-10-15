@@ -6,7 +6,7 @@ namespace CodexLimitTray;
 
 internal static class AppInfo
 {
-    public static string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.4.0";
+    public static string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.4.1";
     public static string ReleasesUrl => "https://github.com/ugurozdagli/CodexLimitTray/releases";
 }
 

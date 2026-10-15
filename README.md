@@ -74,7 +74,7 @@ Open the gear button in the usage panel, or right-click the widget and choose **
 ## Download & run
 
 1. Open the [latest release](https://github.com/ugurozdagli/CodexLimitTray/releases/latest).
-2. Download **`CodexLimitTray-v1.4.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
+2. Download **`CodexLimitTray-v1.4.1-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
 3. Save the EXE in a permanent folder and run it. For the ZIP, extract first and run **`CodexLimitTray.exe`**.
 4. Make sure Codex is installed and signed in with your own ChatGPT account.
 

@@ -1,8 +1,10 @@
-# CodexLimitTray v1.4.0
+# CodexLimitTray v1.4.1
 
 **For Codex addicts. Just one more prompt.**
 
 Make CLT fit your desktop with a rounded Settings panel, optional notifications, and display controls. English and Turkish still follow your Windows display language.
+
+This patch fixes the Settings close and Cancel buttons in v1.4.0. Use v1.4.1 when updating.
 
 ## What's new
 
@@ -21,7 +23,7 @@ Notifications are off by default and depend on current Codex account-continuity 
 
 ## Download and update
 
-Exit CLT, replace your old EXE with `CodexLimitTray-v1.4.0-win-x64.exe`, and run it. Keep the existing file name/location if using Start with Windows, or toggle startup off/on from the new copy. Alternatively, extract `CodexLimitTray-v1.4.0-win-x64.zip` and run `CodexLimitTray.exe`.
+Exit CLT, replace your old EXE with `CodexLimitTray-v1.4.1-win-x64.exe`, and run it. Keep the existing file name/location if using Start with Windows, or toggle startup off/on from the new copy. Alternatively, extract `CodexLimitTray-v1.4.1-win-x64.zip` and run `CodexLimitTray.exe`.
 
 Windows 11 x64 and your own signed-in Codex installation are required. The .NET runtime is included. Mixed-DPI multi-monitor and Remote Desktop setups need broader device testing; the primary taskbar and fallback path were checked locally.
 
