@@ -8,13 +8,15 @@ internal sealed class SettingsForm : Form
         Font = Palette.Font(10); BackColor = Palette.Background; ForeColor = Palette.Text;
         FormBorderStyle = FormBorderStyle.None; MaximizeBox = false; MinimizeBox = false;
         ShowInTaskbar = false; StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(570, 650); AutoScaleMode = AutoScaleMode.Dpi;
-        var heading = new SmoothLabel { Text = L10n.Text("Ayarlar", "Settings") + " · v" + AppInfo.Version, Font = Palette.Font(14, FontStyle.Bold), ForeColor = Palette.Text };
+        ClientSize = new Size(570, 700); AutoScaleMode = AutoScaleMode.Dpi;
+        var heading = new SmoothLabel { Text = L10n.Text("Ayarlar", "Settings"), Font = Palette.Font(14), ForeColor = Palette.Text };
         heading.SetBounds(24, 18, 470, 34); heading.MouseDown += (_, e) => { if (e.Button == MouseButtons.Left) WindowChrome.Drag(this); }; Controls.Add(heading);
+        var version = new SmoothLabel { Text = "v" + AppInfo.Version, Font = Palette.Font(8.5f), ForeColor = Palette.Muted };
+        version.SetBounds(443, 27, 66, 22); version.Anchor = AnchorStyles.Top | AnchorStyles.Right; Controls.Add(version);
         var close = new ModernButton { Text = "×", Size = new Size(32, 32), Location = new Point(514, 18), DialogResult = DialogResult.Cancel }; Controls.Add(close);
         close.Click += (_, _) => Close();
         close.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        var body = new Panel { Location = new Point(0, 64), Size = new Size(570, 524), Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right, AutoScroll = true };
+        var body = new Panel { Location = new Point(0, 64), Size = new Size(570, 574), Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right, AutoScroll = true };
         var layout = new TableLayoutPanel { Dock = DockStyle.Top, Padding = new Padding(24, 0, 24, 0), AutoSize = true, ColumnCount = 2 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 48)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 52));
         body.Controls.Add(layout); Controls.Add(body);
@@ -32,15 +34,18 @@ internal sealed class SettingsForm : Form
         var warning = Number(settings.WarningThreshold, 2, 99);
         var critical = Number(settings.CriticalThreshold, 1, 98);
         var startup = Toggle(previewStartup ?? Startup.Enabled);
+        Section(L10n.Text("Görünüm", "Appearance"));
         Row(L10n.Text("Gösterge görünümü", "Widget view"), view);
         Row(L10n.Text("Panel teması", "Panel theme"), theme);
         Row(L10n.Text("Gösterge yazı boyutu", "Widget text size"), textSize);
         Row(L10n.Text("Detaylı görünümde yenilenme", "Reset in Detailed view"), reset);
         Row(L10n.Text("Gösterilecek ekran", "Display"), monitor);
+        Section(L10n.Text("Bildirimler", "Notifications"));
         Row(L10n.Text("Düşük kota bildirimi", "Low-quota notifications"), low);
         Row(L10n.Text("Uyarı · kalan %", "Warning · remaining %"), warning);
         Row(L10n.Text("Kritik · kalan %", "Critical · remaining %"), critical);
         Row(L10n.Text("Kota yenilendi bildirimi", "Quota replenished notification"), recovery);
+        Section(L10n.Text("Genel", "General"));
         Row(L10n.T("Windows ile başlat"), startup);
         var help = new SmoothLabel
         {
@@ -74,6 +79,14 @@ internal sealed class SettingsForm : Form
         };
         footer.Controls.AddRange([save, cancel, update]); Controls.Add(footer);
         AcceptButton = save; CancelButton = cancel;
+
+        void Section(string text)
+        {
+            var row = layout.RowCount++;
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+            var label = new SmoothLabel { Text = text, Dock = DockStyle.Fill, Padding = new Padding(0, 12, 0, 0), ForeColor = Palette.Muted, Font = Palette.Font(8.5f) };
+            layout.Controls.Add(label, 0, row); layout.SetColumnSpan(label, 2);
+        }
 
         void Row(string label, Control control)
         {

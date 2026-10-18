@@ -43,7 +43,7 @@ These previews are rendered by the application using **fictional demo data**. Th
 ### One click deeper
 
 <p align="center">
-  <img src="docs/images/usage-panel.png" alt="Rounded dark usage panel showing short-term and weekly limits, reset countdowns, refresh and startup controls in Turkish" width="420" />
+  <img src="docs/images/usage-panel.png" alt="Compact dark usage panel with remaining limits, reset countdowns, refresh and startup controls in English" width="420" />
 </p>
 
 ### Make it yours
@@ -54,6 +54,14 @@ These previews are rendered by the application using **fictional demo data**. Th
 
 Open the gear button in the usage panel, or right-click the widget and choose **Settings**. The current compact dark appearance remains the default.
 
+### A simpler right-click menu
+
+<p align="center">
+  <img src="docs/images/tray-menu.png" alt="Compact English tray menu with Taskbar and Tray icon submenus" width="240" />
+</p>
+
+Taskbar controls live under **Taskbar**; the small percentage icon's limit selection lives under **Tray icon**. Settings, startup, update checks, and Exit stay one click away.
+
 ## What you get
 
 | Feature | What it does |
@@ -61,7 +69,7 @@ Open the gear button in the usage panel, or right-click the widget and choose **
 | Two-line taskbar widget | Shows short-term and weekly remaining usage together. |
 | Simple / Detailed views | Keep it compact, or add the reset date and time to each row. |
 | Color at a glance | Green above 35%, amber at 16–35%, red at 0–15% remaining. |
-| Detail panel | Rounded dark cards, smooth text, remaining bars, reset countdowns, and last refresh. |
+| Detail panel | Flat dark/light surfaces, remaining bars, reset countdowns, and last refresh. |
 | Automatic refresh | Checks every 60 seconds when healthy; backs off after failures and refreshes after resume. |
 | Honest connection state | Shows a dash when data is unavailable; old data is labeled in the panel. |
 | Move & lock | Drag horizontally, lock the position, or reset it from the context menu. |
@@ -76,7 +84,7 @@ Open the gear button in the usage panel, or right-click the widget and choose **
 ## Download & run
 
 1. Open the [latest release](https://github.com/ugurozdagli/CodexLimitTray/releases/latest).
-2. Download **`CodexLimitTray-v1.4.1-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
+2. Download **`CodexLimitTray-v1.5.0-win-x64.exe`** for a single portable executable, or choose the ZIP with documentation.
 3. Save the EXE in a permanent folder and run it. For the ZIP, extract first and run **`CodexLimitTray.exe`**.
 4. Make sure Codex is installed and signed in with your own ChatGPT account.
 
@@ -92,11 +100,11 @@ Releases include **SHA-256 checksums** and **GitHub build-provenance attestation
 | --- | --- |
 | `5s` / `5 saatlik` | Five-hour window, when the account returns that duration. |
 | `Hf` / `Haftalık` | Weekly window. |
-| `Görünüm → Basit / Detaylı` | Appearance → Simple / Detailed. |
+| `Görev çubuğu → Basit / Detaylı` | Taskbar → Simple / Detailed. |
 | `Şimdi yenile` | Refresh now. |
 | `Windows ile başlat` | Start with Windows. |
-| `Gösterge konumunu kilitle` | Lock the widget position. |
-| `Gösterge konumunu sıfırla` | Reset the widget position. |
+| `Görev çubuğu → Konumu kilitle` | Taskbar → Lock position. |
+| `Görev çubuğu → Konumu sıfırla` | Taskbar → Reset position. |
 | `Çıkış` | Exit. |
 
 **Left-click** the widget to open the panel. **Right-click** for settings. **Drag** horizontally to reposition it. Escape or a click outside closes the panel. Launching CLT again opens the existing instance.

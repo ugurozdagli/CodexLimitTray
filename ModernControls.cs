@@ -40,12 +40,12 @@ internal sealed class ModernButton : Button
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
-        using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 11);
-        var color = Primary ? (hover ? ControlPaint.Light(Palette.Mint, .1f) : Palette.Mint) : (hover ? Palette.Chip : Palette.Card);
+        using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 5);
+        var color = Primary ? (hover ? ControlPaint.Light(Palette.Accent, .1f) : Palette.Accent) : (hover ? Palette.Chip : Palette.Card);
         if (!Enabled) color = Palette.Track;
         using var fill = new SolidBrush(color); g.FillPath(fill, shape);
         if (!Primary) { using var border = new Pen(Palette.Border); g.DrawPath(border, shape); }
-        using var font = Palette.Font(Text == "×" ? 14 : 9.25f, FontStyle.Bold);
+        using var font = Palette.Font(Text == "×" ? 14 : 9.25f, FontStyle.Regular);
         using var textBrush = new SolidBrush(!Enabled ? Palette.Muted : Primary ? Palette.PrimaryText : Palette.Text);
         using var textFormat = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap };
         g.DrawString(Text, font, textBrush, ClientRectangle, textFormat);
@@ -69,8 +69,8 @@ internal sealed class ModernToggle : CheckBox
         g.DrawString(Text, font, label, new RectangleF(0, 0, Width - 52, Height), format);
         var x = Width - 38; var y = (Height - 20) / 2;
         using var path = ModernShape.Round(new RectangleF(x, y, 36, 20), 10);
-        using var fill = new SolidBrush(Checked ? Palette.Mint : Color.FromArgb(56, 69, 85)); g.FillPath(fill, path);
-        using var knob = new SolidBrush(Checked ? Color.FromArgb(17, 53, 41) : Color.FromArgb(206, 217, 230));
+        using var fill = new SolidBrush(Checked ? Palette.Accent : Palette.Track); g.FillPath(fill, path);
+        using var knob = new SolidBrush(Checked ? Palette.PrimaryText : Palette.Muted);
         g.FillEllipse(knob, x + (Checked ? 18 : 3), y + 3, 14, 14);
         if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(g, ClientRectangle, Palette.Muted, BackColor);
     }
@@ -116,21 +116,22 @@ internal sealed class ModernSelect : Control
     private void OpenChoices()
     {
         Focus();
-        var menu = new ContextMenuStrip { Renderer = new ToolStripProfessionalRenderer(new MenuColors()), BackColor = Palette.Background, ForeColor = Palette.Text, Font = Palette.Font(9) };
+        var menu = new ContextMenuStrip();
         for (var i = 0; i < Items.Count; i++)
         {
             var index = i;
             var item = new ToolStripMenuItem(Items[i].ToString()) { Checked = selected == i, BackColor = Palette.Background, ForeColor = Palette.Text };
             item.Click += (_, _) => { SelectedIndex = index; Focus(); }; menu.Items.Add(item);
         }
+        UtilityMenus.Apply(menu);
         menu.Closed += (_, _) => { if (IsHandleCreated && !IsDisposed) BeginInvoke(() => menu.Dispose()); else menu.Dispose(); };
         menu.Show(this, new Point(0, Height));
     }
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
-        using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 8);
-        using var fill = new SolidBrush(Palette.Card); using var border = new Pen(Focused ? Palette.Mint : Palette.Border);
+        using var shape = ModernShape.Round(new RectangleF(1, 1, Width - 2, Height - 2), 5);
+        using var fill = new SolidBrush(Palette.Card); using var border = new Pen(Focused ? Palette.Accent : Palette.Border);
         g.FillPath(fill, shape); g.DrawPath(border, shape);
         using var brush = new SolidBrush(Palette.Text); using var font = Palette.Font(9);
         using var format = new StringFormat { LineAlignment = StringAlignment.Center, FormatFlags = StringFormatFlags.NoWrap, Trimming = StringTrimming.EllipsisCharacter };
@@ -169,4 +170,54 @@ internal sealed class MenuColors : ProfessionalColorTable
     public override Color CheckSelectedBackground => Palette.Chip;
     public override Color SeparatorDark => Palette.Border;
     public override Color SeparatorLight => Palette.Background;
+}
+
+internal static class UtilityMenus
+{
+    public static void Apply(ToolStripDropDownMenu menu)
+    {
+        menu.Font = SystemFonts.MenuFont;
+        menu.ShowImageMargin = false;
+        menu.ShowCheckMargin = true;
+        menu.Padding = new Padding(3, 4, 3, 4);
+        menu.BackColor = SystemInformation.HighContrast ? SystemColors.Menu : Palette.Background;
+        menu.ForeColor = SystemInformation.HighContrast ? SystemColors.MenuText : Palette.Text;
+        menu.Renderer = SystemInformation.HighContrast ? new ToolStripSystemRenderer() : new UtilityMenuRenderer();
+        foreach (ToolStripItem item in menu.Items)
+        {
+            item.BackColor = menu.BackColor; item.ForeColor = menu.ForeColor;
+            item.Padding = item is ToolStripSeparator ? new Padding(0, 3, 0, 3) : new Padding(3, 5, 12, 5);
+            if (item is ToolStripMenuItem sub && sub.HasDropDownItems && sub.DropDown is ToolStripDropDownMenu dropdown)
+                Apply(dropdown);
+        }
+    }
+}
+
+internal sealed class UtilityMenuRenderer : ToolStripProfessionalRenderer
+{
+    public UtilityMenuRenderer() : base(new MenuColors()) => RoundedEdges = false;
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+    {
+        using var brush = new SolidBrush(e.Item.Selected && e.Item.Enabled ? Palette.Chip : Palette.Background);
+        e.Graphics.FillRectangle(brush, new Rectangle(0, 0, e.Item.Width, e.Item.Height));
+    }
+    protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
+    {
+        ModernShape.Prepare(e.Graphics);
+        var box = e.ImageRectangle;
+        using var pen = new Pen(e.Item.Enabled ? Palette.Text : Palette.Muted, 1.6f);
+        var x = box.Left + box.Width / 2f; var y = box.Top + box.Height / 2f;
+        e.Graphics.DrawLines(pen, [new PointF(x - 4, y), new PointF(x - 1, y + 3), new PointF(x + 5, y - 4)]);
+    }
+    protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+    {
+        e.ArrowColor = e.Item?.Enabled == true ? Palette.Muted : Palette.Track;
+        base.OnRenderArrow(e);
+    }
+    protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+    {
+        using var pen = new Pen(Palette.Border);
+        var y = e.Item.Height / 2;
+        e.Graphics.DrawLine(pen, 9, y, e.Item.Width - 9, y);
+    }
 }

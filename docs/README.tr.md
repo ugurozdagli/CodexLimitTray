@@ -4,7 +4,7 @@ Windows görev çubuğunda Codex aboneliğinin **kalan** kullanım yüzdeleri. N
 
 Arayüz dili Windows'un görüntüleme diline göre otomatik seçilir: Türkçe Windows'ta Türkçe, İngilizce ve diğer dillerde İngilizce. Bölge ayarı dil seçimini değiştirmez. Windows dilini değiştirirsen CLT'yi yeniden başlat.
 
-## v1.4 ayarları ve bildirimler
+## v1.5 görünümü, ayarlar ve bildirimler
 
 Paneldeki dişli düğmesinden veya sağ tık → **Ayarlar** ile görünümü düzenleyebilirsin. Koyu/açık/sistem panel teması, üç gösterge yazı boyutu, detaylı görünümde tarih/geri sayım/gizleme ve monitör seçimi bulunur. Seçilen ekranın görev çubuğu yoksa ana ekrana dönülür. Karma DPI ve Uzak Masaüstü düzenleri daha geniş cihaz testi gerektiriyor.
 
@@ -19,15 +19,15 @@ Kota yenilendi bildirimi için yeni canlı okumada yenilenme zamanı ilerlemeli,
 İndirilen paketi kalıcı bir klasöre çıkarıp `CodexLimitTray.exe` dosyasına çift tıkla. Kaynaktan derlediysen `release\CodexLimitTray.exe` dosyasını çalıştır. İki satırlı gösterge görev çubuğunun sağında, sistem tepsisi alanının hemen solunda görünür. NetSpeedTray çalışıyorsa onun soluna yerleşmeye çalışır. `^` menüsündeki ek CLT simgesi yönetim için de kullanılabilir.
 
 - **5s:** 5 saatlik kalan hak. **Hf:** Haftalık kalan hak.
-- **Sağ tık → Görünüm → Basit / Detaylı:** Basit, kompakt iki satırda yüzdeyi gösterir. Detaylı, limit adını ve yenilenme tarih/saatini de aynı satırlara ekler. Seçim kaydedilir; değişiklik anında uygulanır.
-- **Konum:** Göstergeyi yatay sürükle; konum kaydedilir. Sağ tık → Gösterge konumunu kilitle / Gösterge konumunu sıfırla.
-- **Görev çubuğunda iki satır:** Sağ tık menüsünden açılıp kapatılır.
+- **Sağ tık → Görev çubuğu → Basit / Detaylı:** Basit, kompakt iki satırda yüzdeyi gösterir. Detaylı, limit adını ve yenilenme tarih/saatini de aynı satırlara ekler. Seçim kaydedilir; değişiklik anında uygulanır.
+- **Konum:** Göstergeyi yatay sürükle; konum kaydedilir. Sağ tık → Görev çubuğu → Konumu kilitle / Konumu sıfırla.
+- **Görev çubuğunda iki satır:** Sağ tık → Görev çubuğu → Göster ile açılıp kapatılır.
 - **Görünürlük:** Görev çubuğunu takip eder; tam ekran uygulamada gizlenir. Ana monitördeki yatay Windows görev çubuğu desteklenir.
 
 - **Simge üzerindeki sayı:** Kalan yüzde; yüzde işareti küçük simgede yer kazanmak için gösterilmez. Varsayılan kısa dönem (bu hesapta 5 saatlik).
 - **Sol tık:** İki limiti, kalan hakkı, geri sayımı, yerel yenilenme tarihini ve son kontrolü gösterir. Esc / dışarı tıklama paneli gizler.
 - **Üzerine gel:** Kısa kullanım özeti.
-- **Sağ tık:** Yenile, kısa dönem / haftalık yüzdeyi seç, Windows ile başlat, görev çubuğu ayarları veya çıkış.
+- **Sağ tık:** Yenile, Ayarlar, Windows ile başlat, güncelleme kontrolü veya Çıkış. Konum ve görünüm seçenekleri Görev çubuğu, küçük yüzde simgesinin seçenekleri Tepsi simgesi altındadır.
 - **Renkler:** %35 üstü yeşil; %16–35 sarı; %0–15 kırmızı.
 - **Gri çizgi:** Veri bekleniyor, bağlantı hatası veya veri 3 dakikadan eski. Önceki veri panelde "eski veri" olarak kalır. Bir limit sunulmuyorsa o limit için sayı uydurulmaz.
 - **Windows ile başlat:** Varsayılan kapalıdır; panelden veya sağ tık menüsünden açılır. Kullanıcının Run kayıt defteri anahtarına mevcut EXE yolunu ekler. EXE'yi taşırsan kapatıp tekrar aç.

@@ -21,16 +21,17 @@ internal static class Startup
 internal static class Palette
 {
     public static bool Light { get; private set; }
-    public static Color Background => Light ? Color.FromArgb(244, 247, 251) : Color.FromArgb(17, 22, 30);
-    public static Color Card => Light ? Color.White : Color.FromArgb(29, 39, 53);
-    public static Color CardBottom => Light ? Color.FromArgb(237, 242, 248) : Color.FromArgb(24, 32, 44);
-    public static Color Text => Light ? Color.FromArgb(24, 34, 46) : Color.FromArgb(237, 242, 247);
-    public static Color Muted => Light ? Color.FromArgb(77, 94, 115) : Color.FromArgb(149, 163, 181);
+    public static Color Background => Light ? Color.FromArgb(249, 249, 249) : Color.FromArgb(32, 32, 32);
+    public static Color Card => Light ? Color.White : Color.FromArgb(39, 39, 39);
+    public static Color CardBottom => Card;
+    public static Color Text => Light ? Color.FromArgb(28, 28, 28) : Color.FromArgb(242, 242, 242);
+    public static Color Muted => Light ? Color.FromArgb(96, 96, 96) : Color.FromArgb(170, 170, 170);
     public static Color Mint => Light ? Color.FromArgb(12, 126, 95) : Color.FromArgb(95, 231, 185);
-    public static Color Border => Light ? Color.FromArgb(194, 205, 218) : Color.FromArgb(44, 59, 77);
-    public static Color Track => Light ? Color.FromArgb(210, 220, 232) : Color.FromArgb(48, 62, 80);
-    public static Color Chip => Light ? Color.FromArgb(224, 233, 240) : Color.FromArgb(30, 41, 55);
-    public static Color PrimaryText => Light ? Color.White : Color.FromArgb(15, 44, 35);
+    public static Color Accent => Light ? Color.FromArgb(0, 95, 184) : Color.FromArgb(153, 202, 255);
+    public static Color Border => Light ? Color.FromArgb(222, 222, 222) : Color.FromArgb(58, 58, 58);
+    public static Color Track => Light ? Color.FromArgb(230, 230, 230) : Color.FromArgb(65, 65, 65);
+    public static Color Chip => Light ? Color.FromArgb(239, 239, 239) : Color.FromArgb(48, 48, 48);
+    public static Color PrimaryText => Light ? Color.White : Color.FromArgb(0, 40, 75);
     public static bool WindowsLight(bool taskbar = false)
     {
         try { using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"); return key?.GetValue(taskbar ? "SystemUsesLightTheme" : "AppsUseLightTheme") is int value && value != 0; }
@@ -95,34 +96,38 @@ internal sealed class TrayApp : ApplicationContext
         Palette.Apply(settings.Theme);
         _ = dispatcher.Handle;
         wait = ThreadPool.RegisterWaitForSingleObject(showEvent, (_, _) => { try { dispatcher.BeginInvoke(() => ShowPopup()); } catch (InvalidOperationException) { } }, null, Timeout.Infinite, false);
-        menu.Items.Add("CLT · v" + AppInfo.Version, null, (_, _) => ShowPopup());
-        menu.Items.Add(L10n.Text("Ayarlar…", "Settings…"), null, (_, _) => ShowSettings());
-        menu.Items.Add(L10n.Text("Güncellemeleri kontrol et", "Check for updates"), null, async (_, _) => await CheckUpdatesAsync());
+        menu.Items.Add(L10n.Text("Kullanımı göster", "Show usage"), null, (_, _) => ShowPopup());
         menu.Items.Add(L10n.T("Şimdi yenile"), null, async (_, _) => await RefreshAsync());
-        var widgetItem = new ToolStripMenuItem(L10n.T("Görev çubuğunda iki satır"));
-        var lockItem = new ToolStripMenuItem(L10n.T("Gösterge konumunu kilitle"));
+        menu.Items.Add(new ToolStripSeparator());
+        var taskbar = new ToolStripMenuItem(L10n.Text("Görev çubuğu", "Taskbar"));
+        var widgetItem = new ToolStripMenuItem(L10n.Text("Göster", "Show widget"));
+        var lockItem = new ToolStripMenuItem(L10n.Text("Konumu kilitle", "Lock position"));
         widgetItem.Click += (_, _) => { settings.WidgetEnabled = !settings.WidgetEnabled; SaveSettings(); widget?.SetState(snapshot, Fresh); };
         lockItem.Click += (_, _) => { settings.WidgetLocked = !settings.WidgetLocked; SaveSettings(); };
-        menu.Items.Add(widgetItem); menu.Items.Add(lockItem);
-        var appearance = new ToolStripMenuItem(L10n.T("Görünüm"));
+        taskbar.DropDownItems.AddRange([widgetItem, lockItem, new ToolStripSeparator()]);
         var simpleView = new ToolStripMenuItem(L10n.T("Basit"));
         var detailedView = new ToolStripMenuItem(L10n.T("Detaylı"));
         simpleView.Click += (_, _) => { settings.WidgetDetailed = false; SaveSettings(); UpdateTray(); };
         detailedView.Click += (_, _) => { settings.WidgetDetailed = true; SaveSettings(); UpdateTray(); };
-        appearance.DropDownItems.AddRange([simpleView, detailedView]);
-        menu.Items.Add(appearance);
-        menu.Items.Add(L10n.T("Gösterge konumunu sıfırla"), null, (_, _) => widget?.ResetPosition());
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(shortMode); menu.Items.Add(weeklyMode);
+        taskbar.DropDownItems.AddRange([simpleView, detailedView, new ToolStripSeparator()]);
+        taskbar.DropDownItems.Add(L10n.Text("Konumu sıfırla", "Reset position"), null, (_, _) => widget?.ResetPosition());
+        menu.Items.Add(taskbar);
+        var trayIcon = new ToolStripMenuItem(L10n.Text("Tepsi simgesi", "Tray icon"));
+        trayIcon.DropDownItems.AddRange([shortMode, weeklyMode, new ToolStripSeparator()]);
+        trayIcon.DropDownItems.Add(L10n.Text("Windows simge ayarları…", "Windows icon settings…"), null, (_, _) => OpenTraySettings());
+        menu.Items.Add(trayIcon);
         shortMode.Click += (_, _) => ChangeMode(false);
         weeklyMode.Click += (_, _) => ChangeMode(true);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(L10n.Text("Ayarlar…", "Settings…"), null, (_, _) => ShowSettings());
         menu.Items.Add(startupItem);
         startupItem.Click += (_, _) => ToggleStartup();
-        menu.Items.Add(L10n.T("Tray görünürlük ayarları"), null, (_, _) => OpenTraySettings());
+        menu.Items.Add(L10n.Text("Güncellemeleri kontrol et", "Check for updates"), null, async (_, _) => await CheckUpdatesAsync());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(L10n.T("Çıkış"), null, (_, _) => ExitThread());
-        menu.Opening += (_, _) => { startupItem.Checked = Startup.Enabled; shortMode.Checked = !settings.Weekly; weeklyMode.Checked = settings.Weekly; widgetItem.Checked = settings.WidgetEnabled; lockItem.Checked = settings.WidgetLocked; simpleView.Checked = !settings.WidgetDetailed; detailedView.Checked = settings.WidgetDetailed; };
+        void UpdateMenuChecks() { startupItem.Checked = Startup.Enabled; shortMode.Checked = !settings.Weekly; weeklyMode.Checked = settings.Weekly; widgetItem.Checked = settings.WidgetEnabled; lockItem.Checked = settings.WidgetLocked; simpleView.Checked = !settings.WidgetDetailed; detailedView.Checked = settings.WidgetDetailed; lockItem.Enabled = settings.WidgetEnabled; simpleView.Enabled = settings.WidgetEnabled; detailedView.Enabled = settings.WidgetEnabled; }
+        menu.Opening += (_, _) => UpdateMenuChecks();
+        UpdateMenuChecks();
         tray.ContextMenuStrip = menu;
         tray.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) { if (popup?.Visible == true) popup.Hide(); else ShowPopup(); } };
         widget = new TaskbarWidget(settings, menu, () => ShowPopup(), SaveSettings);
@@ -154,16 +159,22 @@ internal sealed class TrayApp : ApplicationContext
     }
     private void ApplyMenuColors()
     {
-        menu.Renderer = new ToolStripProfessionalRenderer(new MenuColors());
-        void PaintItems(ToolStripItemCollection items)
+        UtilityMenus.Apply(menu);
+    }
+    internal void SaveMenuPreviews(string directory)
+    {
+        Directory.CreateDirectory(directory);
+        Save(menu, "menu.png");
+        foreach (var item in menu.Items.OfType<ToolStripMenuItem>().Where(i => i.HasDropDownItems))
+            Save(item.DropDown, item == menu.Items[3] ? "taskbar-menu.png" : "tray-icon-menu.png");
+        void Save(ToolStripDropDown dropdown, string file)
         {
-            foreach (ToolStripItem item in items)
-            {
-                item.ForeColor = Palette.Text; item.BackColor = Palette.Background;
-                if (item is ToolStripMenuItem sub) PaintItems(sub.DropDownItems);
-            }
+            dropdown.Size = dropdown.GetPreferredSize(Size.Empty);
+            dropdown.PerformLayout();
+            using var bitmap = new Bitmap(dropdown.Width, dropdown.Height);
+            dropdown.DrawToBitmap(bitmap, new Rectangle(Point.Empty, bitmap.Size));
+            bitmap.Save(Path.Combine(directory, file), System.Drawing.Imaging.ImageFormat.Png);
         }
-        PaintItems(menu.Items);
     }
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e) => QueueUi(() => { ApplyAppearance(); UpdateTray(); });
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)

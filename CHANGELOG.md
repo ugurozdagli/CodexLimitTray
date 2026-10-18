@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.0 — A quieter Windows interface
+
+- Replace gradient cards and colored badges with flat surfaces and restrained typography.
+- Make the usage panel more compact, with neutral percentages and slimmer usage bars.
+- Group Settings into Appearance, Notifications, and General.
+- Shorten the tray menu and group taskbar controls and tray-icon choices into submenus.
+- Use neutral menu highlights, plain checkmarks, and Windows menu fonts; respect high-contrast menus.
+- Refresh English/Turkish documentation screenshots and include the corrected README banner in portable packages.
+- Preserve existing preferences and quota-reading behavior.
+
 ## 1.4.1 — Settings close controls
 
 - Fix the close and Cancel buttons on the modeless Settings window.

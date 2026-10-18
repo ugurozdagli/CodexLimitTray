@@ -1,36 +1,28 @@
-# CodexLimitTray v1.4.1
+# CodexLimitTray v1.5.0
 
 **For Codex addicts. Just one more prompt.**
 
-Make CLT fit your desktop with a rounded Settings panel, optional notifications, and display controls. English and Turkish still follow your Windows display language.
+A quieter interface for a small Windows utility. Your quota, explained. Your next prompt, hopefully.
 
-This patch fixes the Settings close and Cancel buttons in v1.4.0. Use v1.4.1 when updating.
+## What's changed
 
-## What's new
+- Flat dark/light panels replace gradient cards and decorative badges.
+- Smaller, neutral percentages, slimmer usage bars, and a more compact usage panel.
+- Settings grouped into Appearance, Notifications, and General.
+- A shorter right-click menu with Taskbar and Tray icon submenus.
+- Plain checkmarks, neutral highlights, Windows menu fonts, and a system-rendered high-contrast fallback.
+- Updated documentation previews in English and Turkish.
 
-- Open Settings from the new gear button or the tray/widget context menu.
-- Dark, light, and system panel themes; widget colors follow the taskbar theme independently.
-- Small/normal/large widget text with measured bounds and click-through outer margins.
-- Date/time, countdown, or hidden reset details in Detailed view.
-- Select one monitor's horizontal taskbar; disconnected/unavailable targets fall back to primary.
-- Optional warning/critical alerts (editable 20%/5% defaults) and confirmed replenishment notices.
-- Silent notification baselines, account-change handling, and per-window threshold deduplication.
-- Fix unknown-duration labels, non-weekly secondary labels, and missing-window placeholders.
-- Atomic settings saves with backup recovery; existing preferences are preserved.
-- Manual GitHub update checks, refresh failure backoff, and refresh after resume.
-
-Notifications are off by default and depend on current Codex account-continuity metadata. Replenishment additionally needs a confirmed new reset window, at least 10 points of added remaining quota, and explicit backend permission. Windows can suppress notifications. CLT must be running; it does not report replenishment while closed.
+Existing preferences, quota polling, optional alerts, and account handling are preserved. The interface still follows your Windows display language: Turkish for Turkish, English otherwise.
 
 ## Download and update
 
-Exit CLT, replace your old EXE with `CodexLimitTray-v1.4.1-win-x64.exe`, and run it. Keep the existing file name/location if using Start with Windows, or toggle startup off/on from the new copy. Alternatively, extract `CodexLimitTray-v1.4.1-win-x64.zip` and run `CodexLimitTray.exe`.
+Exit CLT, replace your current executable with `CodexLimitTray-v1.5.0-win-x64.exe`, and start it. Alternatively, extract `CodexLimitTray-v1.5.0-win-x64.zip` and run `CodexLimitTray.exe`. Keep your existing executable's name and location if using Start with Windows; otherwise turn that option off and back on from the new copy.
 
-Windows 11 x64 and your own signed-in Codex installation are required. The .NET runtime is included. Mixed-DPI multi-monitor and Remote Desktop setups need broader device testing; the primary taskbar and fallback path were checked locally.
+Windows 11 x64 and your own signed-in Codex installation are required. The .NET runtime is bundled. Preferences and their backup remain in your local app-data folder.
 
 ## Validation and privacy
 
-116 offline checks cover language, notification transitions, rendering, settings migration/recovery, modeless settings controls, update versions, and display fallback. Live Codex/taskbar ownership and the GitHub update endpoint were also checked. Documentation screenshots use fictional usage data.
+116 offline checks pass, plus a message-loop smoke check for an unavailable Codex executable. English and Turkish menu/panel/settings previews were inspected in dark and light themes. Mixed-DPI, Remote Desktop, and other device combinations still need broader testing.
 
-No account or token is bundled. A one-way account fingerprint is kept only in memory for safe notification comparisons. User-initiated update checks contact GitHub without sending quota/account data and do not download or execute updates.
-
-The executable remains unsigned. SHA256SUMS and GitHub build-provenance attestations are included. This independent project is not affiliated with OpenAI.
+No account credentials or live usage are bundled. Documentation screenshots use fictional demo data. The executable is unsigned; SHA-256 checksums and GitHub build-provenance attestations accompany the release. This project is independent of OpenAI.

@@ -16,7 +16,7 @@ Use demo data when possible. Remove account details, personal file paths, tokens
 
 ## Areas that could use help
 
-- English and additional UI languages. The current UI is Turkish.
+- Additional UI languages and translation improvements. English and Turkish are supported.
 - Keyboard access and screen-reader coverage.
 - More display scaling, multi-monitor, and taskbar-layout testing.
 - More resilient Codex installation discovery.

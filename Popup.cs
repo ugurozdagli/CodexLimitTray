@@ -17,7 +17,7 @@ internal sealed class Popup : Form
     {
         Text = "CLT · CodexLimitTray";
         FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true;
-        StartPosition = FormStartPosition.Manual; ClientSize = new Size(420, 620);
+        StartPosition = FormStartPosition.Manual; ClientSize = new Size(420, 560);
         BackColor = Palette.Background; ForeColor = Palette.Text; Font = Palette.Font(10);
         DoubleBuffered = true; KeyPreview = true;
         Padding = new Padding(1);
@@ -35,7 +35,6 @@ internal sealed class Popup : Form
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 164, BackColor = Palette.Background };
         refresh = MakeButton(L10n.T("Şimdi yenile"), refreshAction);
         mode = MakeButton(L10n.T("Tray: 5 saatlik"), modeAction);
-        ((ModernButton)refresh).Primary = true;
         refresh.SetBounds(24, 10, 178, 40); mode.SetBounds(212, 10, 184, 40);
         startup.SetBounds(25, 61, 370, 35);
         startup.CheckedChanged += (_, _) => { if (!settingStartup) startupAction(); };
@@ -96,25 +95,16 @@ internal sealed class Popup : Form
     {
         base.OnPaint(e);
         var g = e.Graphics; ModernShape.Prepare(g);
-        using var mark = ModernShape.Round(new RectangleF(24, 23, 38, 38), 12);
-        using var markFill = new SolidBrush(Palette.Light ? Color.FromArgb(218, 239, 230) : Color.FromArgb(31, 63, 56)); g.FillPath(markFill, mark);
-        using var accent = new SolidBrush(Palette.Mint);
-        g.FillRectangle(accent, 34, 43, 4, 7); g.FillRectangle(accent, 41, 37, 4, 13); g.FillRectangle(accent, 48, 31, 4, 19);
-        using var title = Palette.Font(13, FontStyle.Bold);
-        using var sub = Palette.Font(8.75f);
-        using var text = new SolidBrush(Palette.Text); using var muted = new SolidBrush(Palette.Muted);
-        g.DrawString("CodexLimitTray · v" + AppInfo.Version, title, text, 74, 22);
-        g.DrawString(L10n.T("Kalan kullanım hakkın"), sub, muted, 75, 47);
+        using var title = Palette.Font(13, FontStyle.Regular);
+        using var sub = Palette.Font(9);
+        using var text = new SolidBrush(Palette.Text);
+        using var muted = new SolidBrush(Palette.Muted);
+        g.DrawString("CodexLimitTray", title, text, 24, 23);
         var plan = subtitle.Contains('·') ? subtitle.Split('·')[^1].Trim() : "CODEX";
-        using var planFont = Palette.Font(8, FontStyle.Bold);
-        var planWidth = Math.Max(43, g.MeasureString(plan, planFont).Width + 20);
-        using var chip = ModernShape.Round(new RectangleF(24, 77, planWidth, 20), 10);
-        using var chipFill = new SolidBrush(Palette.Chip); g.FillPath(chipFill, chip);
-        using var centered = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString(plan, planFont, muted, new RectangleF(24, 77, planWidth, 20), centered);
-        using var dot = new SolidBrush(live ? Palette.Mint : Palette.Muted);
-        g.FillEllipse(dot, 312, 83, 6, 6);
-        g.DrawString(live ? L10n.T("Güncel") : L10n.T("Bekleniyor"), sub, muted, 323, 77);
+        g.DrawString(L10n.T("Kalan kullanım hakkın") + " · " + plan, sub, muted, 24, 53);
+        g.DrawString(live ? L10n.T("Güncel") : L10n.T("Bekleniyor"), sub, muted, 24, 79);
+        using var rule = new Pen(Palette.Border);
+        g.DrawLine(rule, 24, 102, Width - 24, 102);
     }
     protected override void Dispose(bool disposing) { if (disposing) { Icon?.Dispose(); Font.Dispose(); } base.Dispose(disposing); }
 }
@@ -127,37 +117,37 @@ internal sealed class WindowCard : Control
     public WindowCard(UsageWindow window, string? bucketName, bool fresh)
     {
         this.window = window; this.bucketName = bucketName; this.fresh = fresh;
-        Size = new Size(372, bucketName is null ? 156 : 174); Margin = new Padding(0, 0, 0, 12);
+        Size = new Size(372, bucketName is null ? 128 : 146); Margin = new Padding(0, 0, 0, 8);
         DoubleBuffered = true; BackColor = Palette.Background;
         AccessibleName = L10n.T("{0} {1} yüzde {2} kaldı. Yenilenme {3}", bucketName, window.Duration, window.Remaining, window.ResetText);
     }
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics; ModernShape.Prepare(g); g.Clear(BackColor);
-        using var path = ModernShape.Round(new RectangleF(.5f, .5f, Width - 1, Height - 1), 17);
-        using var fill = new LinearGradientBrush(ClientRectangle, Palette.Card, Palette.CardBottom, 60);
-        g.FillPath(fill, path); using var border = new Pen(Palette.Border); g.DrawPath(border, path);
-        using var small = Palette.Font(8.5f); using var big = new Font("Segoe UI Semibold", 31, FontStyle.Regular); using var label = Palette.Font(9.5f, FontStyle.Bold);
-        using var muted = new SolidBrush(Palette.Muted); using var text = new SolidBrush(Palette.Text);
-        var color = fresh ? Palette.For(window.Remaining) : Palette.Muted;
-        using var accent = new SolidBrush(color);
+        using var path = ModernShape.Round(new RectangleF(.5f, .5f, Width - 1, Height - 1), 7);
+        using var fill = new SolidBrush(Palette.Card);
+        g.FillPath(fill, path);
+        using var border = new Pen(Palette.Border); g.DrawPath(border, path);
+        using var small = Palette.Font(8.5f);
+        using var big = Palette.Font(25);
+        using var label = Palette.Font(10);
+        using var muted = new SolidBrush(Palette.Muted);
+        using var text = new SolidBrush(Palette.Text);
+        using var accent = new SolidBrush(fresh ? Palette.For(window.Remaining) : Palette.Muted);
         var y = 13;
-        if (bucketName is not null) { g.DrawString(bucketName, small, muted, 18, y); y += 18; }
-        g.DrawString(window.Duration, label, text, 18, y);
-        using var badge = ModernShape.Round(new RectangleF(291, y, 62, 22), 11);
-        using var tint = new SolidBrush(Color.FromArgb(25, color)); g.FillPath(tint, badge);
-        using var centered = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-        g.DrawString(fresh ? L10n.T("kalan") : L10n.T("eski veri"), small, accent, new RectangleF(291, y, 62, 22), centered);
-        g.DrawString(L10n.Percent(window.Remaining), big, accent, 14, y + 20);
-        var bar = new RectangleF(18, y + 79, Width - 36, 6);
+        if (bucketName is not null) { g.DrawString(bucketName, small, muted, 16, y); y += 18; }
+        g.DrawString(window.Duration, label, text, 16, y + 5);
+        using var right = new StringFormat { Alignment = StringAlignment.Far, LineAlignment = StringAlignment.Center };
+        g.DrawString(L10n.Percent(window.Remaining), big, fresh ? text : muted, new RectangleF(160, y - 7, Width - 176, 46), right);
+        var bar = new RectangleF(16, y + 43, Width - 32, 4);
         using var track = new SolidBrush(Palette.Track);
-        using var trackPath = ModernShape.Round(bar, 3); g.FillPath(track, trackPath);
+        using var trackPath = ModernShape.Round(bar, 2); g.FillPath(track, trackPath);
         if (window.Remaining > 0)
         {
-            using var progress = ModernShape.Round(new RectangleF(bar.X, bar.Y, bar.Width * window.Remaining / 100f, bar.Height), 3);
+            using var progress = ModernShape.Round(new RectangleF(bar.X, bar.Y, bar.Width * window.Remaining / 100f, bar.Height), 2);
             g.FillPath(accent, progress);
         }
-        g.DrawString(window.Countdown(DateTimeOffset.Now), small, text, 18, y + 96);
-        g.DrawString(L10n.T("Yenilenme  ·  {0}", window.ResetText), small, muted, 18, y + 117);
+        g.DrawString((fresh ? "" : L10n.T("Eski veri") + " · ") + window.Countdown(DateTimeOffset.Now), small, text, 16, y + 57);
+        g.DrawString(L10n.T("Yenilenme  ·  {0}", window.ResetText), small, muted, 16, y + 79);
     }
 }

@@ -80,6 +80,13 @@ internal static class Diagnostics
                     canvas.Save(Path.Combine(output, detailed ? "taskbar-detailed.png" : "taskbar-simple.png"), System.Drawing.Imaging.ImageFormat.Png);
                 }
             }
+            else if (args[0] == "--menu-previews")
+            {
+                using var signal = new EventWaitHandle(false, EventResetMode.AutoReset);
+                using var app = new TrayApp(signal);
+                app.SaveMenuPreviews(output);
+                app.ExitThread();
+            }
             else if (args[0] == "--self-test")
             {
                 var tests = RunTests();
